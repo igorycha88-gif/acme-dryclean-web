@@ -71,12 +71,12 @@ export default async function ServicePage({ params }: Props) {
               <span className="mx-2">/</span>
               <span className="text-white/70">{service.title}</span>
             </nav>
-            <div className="grid grid-cols-2 gap-8 items-center max-md:grid-cols-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
-                <h1 className="font-[family-name:var(--font-heading)] font-extrabold text-5xl leading-[56px] max-md:text-[32px] max-md:leading-10">
+                <h1 className="font-[family-name:var(--font-heading)] font-extrabold text-4xl leading-tight sm:text-5xl sm:leading-[56px]">
                   {service.title}
                 </h1>
-                <p className="mt-4 text-lg text-white/80 max-md:text-base">
+                <p className="mt-4 text-base text-white/80 sm:text-lg">
                   {service.shortDescription}
                 </p>
                 <div className="mt-6 flex flex-wrap items-center gap-4">
@@ -89,7 +89,7 @@ export default async function ServicePage({ params }: Props) {
                   </Button>
                 </div>
               </div>
-              <div className="aspect-[4/3] rounded-2xl overflow-hidden relative">
+              <div className="aspect-square rounded-2xl overflow-hidden relative">
                 <Image
                   src={service.heroImage}
                   alt={service.title}
@@ -106,7 +106,7 @@ export default async function ServicePage({ params }: Props) {
         <Section>
           <Container>
             <div className="max-w-3xl mx-auto">
-              <h2 className="font-[family-name:var(--font-heading)] font-bold text-3xl leading-[40px] max-md:text-2xl max-md:leading-8">
+              <h2 className="font-[family-name:var(--font-heading)] font-bold text-[26px] leading-8 sm:text-3xl sm:leading-[40px]">
                 О&nbsp;услуге
               </h2>
               <div className="mt-6 text-text-secondary leading-relaxed whitespace-pre-line">
@@ -121,7 +121,7 @@ export default async function ServicePage({ params }: Props) {
             <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] text-center max-md:text-[26px] max-md:leading-8">
               Почему выбирают нас
             </h2>
-            <div className="mt-12 grid grid-cols-3 gap-6 max-md:grid-cols-2 max-[480px]:grid-cols-1">
+            <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {service.benefits.map((benefit, i) => (
                 <div
                   key={i}
@@ -184,7 +184,7 @@ export default async function ServicePage({ params }: Props) {
             <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] text-center max-md:text-[26px] max-md:leading-8">
               Читайте также
             </h2>
-            <div className="mt-10 grid grid-cols-3 gap-6 max-md:grid-cols-1">
+            <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {service.articles.map((article) => (
                 <article
                   key={article.slug}
@@ -268,7 +268,7 @@ export default async function ServicePage({ params }: Props) {
             <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] text-center max-md:text-[26px] max-md:leading-8">
               Другие услуги
             </h2>
-            <div className="mt-10 grid grid-cols-3 gap-6 max-md:grid-cols-2 max-[480px]:grid-cols-1">
+            <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {otherServices.slice(0, 5).map((s) => (
                 <Link
                   key={s.slug}
