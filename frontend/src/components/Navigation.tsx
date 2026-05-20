@@ -70,32 +70,40 @@ export default function Navigation() {
         </button>
       </Container>
 
-      {menuOpen && (
-        <div className="lg:hidden fixed inset-0 top-[70px] z-40 bg-white">
-          <div className="flex flex-col items-center gap-6 pt-12">
-            {NAV_LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="text-lg text-text-primary"
-                onClick={() => setMenuOpen(false)}
-              >
-                {link.label}
-              </a>
-            ))}
+      <div
+        className={`lg:hidden fixed inset-0 top-[70px] z-40 bg-white transition-all duration-300 ${
+          menuOpen
+            ? "opacity-100 visible"
+            : "opacity-0 invisible"
+        }`}
+      >
+        <div
+          className={`flex flex-col items-center gap-6 pt-12 transition-transform duration-300 ${
+            menuOpen ? "translate-y-0" : "-translate-y-4"
+          }`}
+        >
+          {NAV_LINKS.map((link) => (
             <a
-              href={`tel:${CONTACTS.phoneRaw}`}
-              className="flex items-center gap-2 text-lg font-semibold text-primary mt-4"
+              key={link.href}
+              href={link.href}
+              className="text-lg text-text-primary"
+              onClick={() => setMenuOpen(false)}
             >
-              <Phone size={20} />
-              {CONTACTS.phone}
+              {link.label}
             </a>
-            <Button href="#cta-form" onClick={() => setMenuOpen(false)}>
-              Оставить заявку
-            </Button>
-          </div>
+          ))}
+          <a
+            href={`tel:${CONTACTS.phoneRaw}`}
+            className="flex items-center gap-2 text-lg font-semibold text-primary mt-4"
+          >
+            <Phone size={20} />
+            {CONTACTS.phone}
+          </a>
+          <Button href="#cta-form" onClick={() => setMenuOpen(false)}>
+            Оставить заявку
+          </Button>
         </div>
-      )}
+      </div>
     </nav>
   );
 }

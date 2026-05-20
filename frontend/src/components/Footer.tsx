@@ -25,7 +25,7 @@ export default function Footer() {
   return (
     <footer className="bg-primary text-white">
       <Container className="py-12">
-        <div className="grid grid-cols-4 gap-8 max-md:grid-cols-1">
+        <div className="grid grid-cols-4 gap-8 max-lg:grid-cols-2 max-sm:grid-cols-1">
           <div>
             <Link
               href="/"

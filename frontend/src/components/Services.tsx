@@ -16,9 +16,9 @@ export default function Services() {
           {SERVICES.map((service) => (
             <div
               key={service.id}
-              className="group rounded-xl border border-gray-100 bg-white p-6 transition-all duration-400 hover:-translate-y-1 hover:shadow-lg"
+              className="group rounded-xl border border-gray-100 bg-white p-4 sm:p-6 transition-all duration-400 hover:-translate-y-1 hover:shadow-lg"
             >
-              <div className="aspect-[4/3] rounded-lg bg-bg-alt flex items-center justify-center text-text-secondary text-sm">
+              <div className="aspect-[4/3] rounded-lg bg-bg-alt flex items-center justify-center text-text-secondary text-sm text-xs sm:text-sm">
                 Фото: {service.title}
               </div>
               <h3 className="mt-4 font-[family-name:var(--font-heading)] font-bold text-xl max-md:text-lg">

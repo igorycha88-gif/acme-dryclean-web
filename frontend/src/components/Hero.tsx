@@ -36,7 +36,7 @@ export default function Hero() {
             </Button>
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-white/70">
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/70">
             <span className="flex items-center gap-1">
               {[...Array(5)].map((_, i) => (
                 <Star

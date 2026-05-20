@@ -24,7 +24,7 @@ export default function B2BSection() {
               <a
                 key={cat.slug}
                 href={`/${cat.slug}`}
-                className="group rounded-xl border border-gray-100 bg-white p-6 text-center transition-all duration-400 hover:-translate-y-1 hover:shadow-lg"
+                className="group rounded-xl border border-gray-100 bg-white p-4 sm:p-6 text-center transition-all duration-400 hover:-translate-y-1 hover:shadow-lg"
               >
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-secondary/10 text-secondary">
                   <Icon size={24} />
