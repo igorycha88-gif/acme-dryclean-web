@@ -1,0 +1,18 @@
+# Environment files
+.env
+
+# Dependencies
+node_modules/
+
+# Build artifacts
+.next/
+
+# OS files
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Uploads
+uploads/
