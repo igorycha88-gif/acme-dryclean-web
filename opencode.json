@@ -1,0 +1,15 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "zai-coding-plan": {
+      "models": {
+        "glm-5": {
+          "options": {
+            "temperature": 2
+          }
+        }
+      }
+    }
+  },
+  "model": "zai-coding-plan/glm-5"
+}

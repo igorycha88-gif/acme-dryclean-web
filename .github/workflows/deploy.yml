@@ -1,0 +1,62 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install sshpass
+        run: sudo apt-get update && sudo apt-get install -y sshpass
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS
+        env:
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          sshpass -p "$VPS_PASSWORD" ssh -o StrictHostKeyChecking=accept-new $VPS_USER@$VPS_HOST << 'DEPLOY_SCRIPT'
+            set -e
+
+            DEPLOY_DIR="/opt/app"
+            REPO_DIR="/opt/repo"
+
+            echo "=== Cloning latest code ==="
+            if [ -d "$REPO_DIR" ]; then
+              cd "$REPO_DIR"
+              git fetch --all
+              git reset --hard origin/main
+            else
+              git clone ${{ secrets.REPO_URL }} "$REPO_DIR"
+              cd "$REPO_DIR"
+            fi
+
+            echo "=== Syncing files to deploy directory ==="
+            mkdir -p "$DEPLOY_DIR"
+            rsync -a --delete \
+              --exclude='.git' \
+              --exclude='node_modules' \
+              --exclude='.next' \
+              "$REPO_DIR/" "$DEPLOY_DIR/"
+
+            cd "$DEPLOY_DIR"
+
+            echo "=== Building and starting containers ==="
+            docker compose -f docker-compose.prod.yml down --remove-orphans
+            docker compose -f docker-compose.prod.yml build --no-cache
+            docker compose -f docker-compose.prod.yml up -d
+
+            echo "=== Waiting for services to be healthy ==="
+            sleep 15
+
+            echo "=== Cleaning up old images ==="
+            docker image prune -f
+
+            echo "=== Deployment complete ==="
+            docker compose -f docker-compose.prod.yml ps
+          DEPLOY_SCRIPT

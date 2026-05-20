@@ -1,0 +1,84 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_CONTENT_API_URL=http://localhost:8011
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: dryclean
+      POSTGRES_PASSWORD: dryclean_dev
+      POSTGRES_DB: dryclean_content
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dryclean"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: dryclean
+      RABBITMQ_DEFAULT_PASS: dryclean_dev
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  content:
+    build:
+      context: ./backend/services/content
+      dockerfile: Dockerfile
+    ports:
+      - "8011:8011"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://dryclean:dryclean_dev@postgres:5432/dryclean_content
+      - DATABASE_URL_SYNC=postgresql+psycopg2://dryclean:dryclean_dev@postgres:5432/dryclean_content
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - content_uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres_data:
+  content_uploads:
