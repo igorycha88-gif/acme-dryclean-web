@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   CheckCircle,
@@ -70,21 +71,33 @@ export default async function ServicePage({ params }: Props) {
               <span className="mx-2">/</span>
               <span className="text-white/70">{service.title}</span>
             </nav>
-            <div className="max-w-3xl">
-              <h1 className="font-[family-name:var(--font-heading)] font-extrabold text-5xl leading-[56px] max-md:text-[32px] max-md:leading-10">
-                {service.title}
-              </h1>
-              <p className="mt-4 text-lg text-white/80 max-md:text-base">
-                {service.shortDescription}
-              </p>
-              <div className="mt-6 flex flex-wrap items-center gap-4">
-                <span className="rounded-full bg-accent px-5 py-2 font-[family-name:var(--font-heading)] font-bold text-sm">
-                  от {service.priceFrom} руб.
-                </span>
-                <Button variant="secondary" href="#cta-service" className="!border-white !text-white hover:!bg-white hover:!text-primary">
-                  Заказать
-                  <ArrowRight size={16} />
-                </Button>
+            <div className="grid grid-cols-2 gap-8 items-center max-md:grid-cols-1">
+              <div>
+                <h1 className="font-[family-name:var(--font-heading)] font-extrabold text-5xl leading-[56px] max-md:text-[32px] max-md:leading-10">
+                  {service.title}
+                </h1>
+                <p className="mt-4 text-lg text-white/80 max-md:text-base">
+                  {service.shortDescription}
+                </p>
+                <div className="mt-6 flex flex-wrap items-center gap-4">
+                  <span className="rounded-full bg-accent px-5 py-2 font-[family-name:var(--font-heading)] font-bold text-sm">
+                    от {service.priceFrom} руб.
+                  </span>
+                  <Button variant="secondary" href="#cta-service" className="!border-white !text-white hover:!bg-white hover:!text-primary">
+                    Заказать
+                    <ArrowRight size={16} />
+                  </Button>
+                </div>
+              </div>
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden relative">
+                <Image
+                  src={service.heroImage}
+                  alt={service.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority
+                />
               </div>
             </div>
           </Container>

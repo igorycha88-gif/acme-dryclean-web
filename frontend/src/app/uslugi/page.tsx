@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import TopBar from "@/components/TopBar";
@@ -38,8 +39,14 @@ export default function AllServicesPage() {
                   href={`/uslugi/${service.slug}`}
                   className="group rounded-xl border border-gray-100 bg-white p-6 transition-all duration-400 hover:-translate-y-1 hover:shadow-lg"
                 >
-                  <div className="aspect-[4/3] rounded-lg bg-bg-alt flex items-center justify-center text-text-secondary text-sm">
-                    Фото: {service.title}
+                  <div className="aspect-[4/3] rounded-lg bg-bg-alt overflow-hidden relative">
+                    <Image
+                      src={service.image}
+                      alt={service.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 50vw, 33vw"
+                    />
                   </div>
                   <h2 className="mt-4 font-[family-name:var(--font-heading)] font-bold text-xl max-md:text-lg">
                     {service.title}

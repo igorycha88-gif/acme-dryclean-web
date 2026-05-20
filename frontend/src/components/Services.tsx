@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import Container from "@/components/ui/Container";
 import Section from "@/components/ui/Section";
@@ -18,8 +19,14 @@ export default function Services() {
               key={service.id}
               className="group rounded-xl border border-gray-100 bg-white p-4 sm:p-6 transition-all duration-400 hover:-translate-y-1 hover:shadow-lg"
             >
-              <div className="aspect-[4/3] rounded-lg bg-bg-alt flex items-center justify-center text-text-secondary text-sm text-xs sm:text-sm">
-                Фото: {service.title}
+              <div className="aspect-[4/3] rounded-lg bg-bg-alt overflow-hidden relative">
+                <Image
+                  src={service.image}
+                  alt={service.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 480px) 100vw, (max-width: 768px) 50vw, 33vw"
+                />
               </div>
               <h3 className="mt-4 font-[family-name:var(--font-heading)] font-bold text-xl max-md:text-lg">
                 {service.title}
