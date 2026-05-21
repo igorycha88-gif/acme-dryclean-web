@@ -11,8 +11,8 @@
   --color-warning: #F59E0B;
   --color-background: #FFFFFF;
   --color-foreground: #1A1A2E;
-  --font-heading: "Montserrat", sans-serif;
-  --font-body: "Inter", sans-serif;
+  --font-heading: var(--font-montserrat), sans-serif;
+  --font-body: var(--font-inter), sans-serif;
 }
 
 body {

@@ -19,16 +19,16 @@ const SITE_URL = "https://da-dryclean.ru";
 
 export const metadata: Metadata = {
   title:
-    "Все услуги химчистки на дому в Москве — цены, описание | D&A Dry Cleaning",
+    "Услуги химчистки на дому в Москве — цены от 500₽ | D&A Dry Cleaning",
   description:
-    "Полный каталог услуг выездной химчистки: диваны, ковры, матрасы, салон авто, шторы, ковролин. Профессиональное оборудование Karcher. Без предоплаты. Выезд по Москве и МО бесплатно.",
+    "Полный каталог услуг выездной химчистки в Москве и МО: диваны от 500₽, ковры, матрасы, салон авто, шторы, ковролин. Оборудование Karcher. Без предоплаты. Выезд бесплатно. Звоните!",
   alternates: {
     canonical: `${SITE_URL}/uslugi`,
   },
   openGraph: {
-    title: "Все услуги химчистки на дому в Москве — D&A Dry Cleaning",
+    title: "Услуги химчистки на дому в Москве — цены от 500₽ | D&A Dry Cleaning",
     description:
-      "Полный каталог услуг выездной химчистки: диваны, ковры, матрасы, салон авто, шторы, ковролин.",
+      "Диваны, ковры, матрасы, салон авто, шторы, ковролин — профессиональная химчистка с выездом. Без предоплаты.",
     url: `${SITE_URL}/uslugi`,
     type: "website",
   },
@@ -63,11 +63,11 @@ export default function AllServicesPage() {
         <Section>
           <Container>
             <h1 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] text-center max-md:text-[26px] max-md:leading-8">
-              Наши услуги
+              Услуги химчистки на дому в&nbsp;Москве
             </h1>
             <p className="mt-3 text-center text-text-secondary max-w-2xl mx-auto">
-              Профессиональная выездная химчистка в Москве и Московской области.
-              Выезд мастера — бесплатно. Оплата по факту.
+              Профессиональная выездная химчистка в&nbsp;Москве и&nbsp;Московской области.
+              Выезд мастера&nbsp;&mdash; бесплатно. Оплата по&nbsp;факту. Цены от&nbsp;500&#8381;.
             </p>
 
             <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

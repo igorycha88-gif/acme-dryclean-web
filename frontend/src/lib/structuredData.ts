@@ -260,3 +260,65 @@ export function generateReviewsJsonLd(): ReviewJsonLd {
     })),
   };
 }
+
+export interface ArticleJsonLd {
+  "@context": string;
+  "@type": string;
+  headline: string;
+  description: string;
+  url: string;
+  datePublished: string;
+  dateModified: string;
+  author: {
+    "@type": string;
+    name: string;
+  };
+  publisher: {
+    "@type": string;
+    name: string;
+    url: string;
+    logo: {
+      "@type": string;
+      url: string;
+    };
+  };
+  mainEntityOfPage: {
+    "@type": string;
+    "@id": string;
+  };
+}
+
+export function generateArticleJsonLd(article: {
+  title: string;
+  excerpt: string;
+  slug: string;
+  publishedAt: string;
+  updatedAt: string;
+}): ArticleJsonLd {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: article.title,
+    description: article.excerpt,
+    url: `${SITE_URL}/blog/${article.slug}`,
+    datePublished: article.publishedAt,
+    dateModified: article.updatedAt,
+    author: {
+      "@type": "Organization",
+      name: "D&A Dry Cleaning",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "D&A Dry Cleaning",
+      url: SITE_URL,
+      logo: {
+        "@type": "ImageObject",
+        url: `${SITE_URL}/icon?s=64`,
+      },
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `${SITE_URL}/blog/${article.slug}`,
+    },
+  };
+}
