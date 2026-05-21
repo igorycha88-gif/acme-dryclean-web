@@ -32,6 +32,14 @@ export const SERVICES = [
   },
   {
     id: 2,
+    title: "Химчистка ростовых кукол",
+    slug: "himchistka-rostovyh-kukol",
+    description:
+      "Профессиональная чистка и дезинфекция ростовых кукол. Удаление пятен, запахов, восстановление внешнего вида.",
+    image: "/images/services/mascot.jpg",
+  },
+  {
+    id: 3,
     title: "Химчистка ковров",
     slug: "himchistka-kovrov",
     description:
@@ -39,7 +47,7 @@ export const SERVICES = [
     image: "/images/services/carpet.jpg",
   },
   {
-    id: 3,
+    id: 4,
     title: "Химчистка матрасов",
     slug: "himchistka-matrasov",
     description:
@@ -47,20 +55,12 @@ export const SERVICES = [
     image: "/images/services/mattress.jpg",
   },
   {
-    id: 4,
+    id: 5,
     title: "Химчистка авто",
     slug: "himchistka-salona-avtomobilya",
     description:
       "Чистка салона автомобиля: сиденья, потолок, коврики. Как из автосалона.",
     image: "/images/services/car.jpg",
-  },
-  {
-    id: 5,
-    title: "Химчистка штор",
-    slug: "himchistka-shtor",
-    description:
-      "Бережная чистка штор и тюлей без снятия с карниза. Сохраняем форму и цвет.",
-    image: "/images/services/curtains.jpg",
   },
   {
     id: 6,

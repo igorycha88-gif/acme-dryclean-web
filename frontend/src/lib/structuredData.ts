@@ -56,7 +56,7 @@ export function generateLocalBusinessJsonLd(): LocalBusinessJsonLd {
     "@type": "LocalBusiness",
     name: "D&A Dry Cleaning — Химчистка на дому в Москве",
     description:
-      "Профессиональная выездная химчистка мягкой мебели, ковров, матрасов, штор и салона автомобиля в Москве и Московской области. Без предоплаты, оплата по факту.",
+      "Профессиональная выездная химчистка мягкой мебели, ковров, матрасов, ростовых кукол и салона автомобиля в Москве и Московской области. Без предоплаты, оплата по факту.",
     url: SITE_URL,
     telephone: [CONTACTS.phone, CONTACTS.phoneAlt],
     email: CONTACTS.email,

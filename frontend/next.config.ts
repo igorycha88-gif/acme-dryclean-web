@@ -82,8 +82,8 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
       {
-        source: "/himchistka-shtor",
-        destination: "/uslugi/himchistka-shtor",
+        source: "/himchistka-rostovyh-kukol",
+        destination: "/uslugi/himchistka-rostovyh-kukol",
         permanent: true,
       },
       {
