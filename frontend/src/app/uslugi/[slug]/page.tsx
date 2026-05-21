@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Script from "next/script";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -23,21 +24,60 @@ import {
   getAllServiceSlugs,
   getOtherServices,
 } from "@/lib/serviceData";
+import {
+  generateServiceJsonLd,
+  generateFAQPageJsonLd,
+  generateBreadcrumbJsonLd,
+  generateLocalBusinessJsonLd,
+} from "@/lib/structuredData";
+
+const SITE_URL = "https://da-dryclean.ru";
 
 type Props = { params: Promise<{ slug: string }> };
+
+export async function generateStaticParams() {
+  return getAllServiceSlugs().map((slug) => ({ slug }));
+}
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const service = getServiceBySlug(slug);
-  if (!service) return { title: "Услуга не найдена" };
+  if (!service) return { title: "Услуга не найдена", robots: { index: false } };
+
+  const canonicalUrl = `${SITE_URL}/uslugi/${slug}`;
+
   return {
     title: service.seoTitle,
     description: service.seoDescription,
+    alternates: {
+      canonical: canonicalUrl,
+    },
+    openGraph: {
+      title: service.seoTitle,
+      description: service.seoDescription,
+      url: canonicalUrl,
+      type: "website",
+      siteName: "D&A Dry Cleaning",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: service.seoTitle,
+      description: service.seoDescription,
+    },
+    keywords: [
+      service.title.toLowerCase(),
+      `${service.title.toLowerCase()} на дому москва`,
+      `${service.title.toLowerCase()} цена москва`,
+      `профессиональная ${service.title.toLowerCase()} москва`,
+      `${service.title.toLowerCase()} с выездом москва`,
+      "химчистка москва",
+      "выездная химчистка москва",
+    ],
+    robots: {
+      index: true,
+      follow: true,
+    },
   };
-}
-
-export function generateStaticParams() {
-  return getAllServiceSlugs().map((slug) => ({ slug }));
 }
 
 function BenefitIcon({ index }: { index: number }) {
@@ -53,22 +93,67 @@ export default async function ServicePage({ params }: Props) {
 
   const otherServices = getOtherServices(slug);
 
+  const serviceJsonLd = generateServiceJsonLd(slug);
+  const faqJsonLd = generateFAQPageJsonLd(service.faq);
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { name: "Главная", url: "/" },
+    { name: "Услуги", url: "/uslugi" },
+    { name: service.title, url: `/uslugi/${slug}` },
+  ]);
+  const localBusinessJsonLd = generateLocalBusinessJsonLd();
+
   return (
     <>
+      {serviceJsonLd && (
+        <Script
+          id={`structured-data-service-${slug}`}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }}
+        />
+      )}
+      <Script
+        id={`structured-data-faq-${slug}`}
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+      <Script
+        id={`structured-data-breadcrumb-${slug}`}
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbJsonLd),
+        }}
+      />
+      <Script
+        id={`structured-data-local-business-${slug}`}
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(localBusinessJsonLd),
+        }}
+      />
       <TopBar />
       <Navigation />
       <main>
         <section className="bg-primary text-white">
           <Container className="py-16 max-md:py-10">
-            <nav className="text-sm text-white/50 mb-6">
+            <nav
+              className="text-sm text-white/50 mb-6"
+              aria-label="Навигация по странице"
+            >
               <Link href="/" className="hover:text-white/80 transition-colors">
                 Главная
               </Link>
-              <span className="mx-2">/</span>
-              <Link href="/uslugi" className="hover:text-white/80 transition-colors">
+              <span className="mx-2" aria-hidden="true">
+                /
+              </span>
+              <Link
+                href="/uslugi"
+                className="hover:text-white/80 transition-colors"
+              >
                 Услуги
               </Link>
-              <span className="mx-2">/</span>
+              <span className="mx-2" aria-hidden="true">
+                /
+              </span>
               <span className="text-white/70">{service.title}</span>
             </nav>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
@@ -80,10 +165,11 @@ export default async function ServicePage({ params }: Props) {
                   {service.shortDescription}
                 </p>
                 <div className="mt-6 flex flex-wrap items-center gap-4">
-                  <span className="rounded-full bg-accent px-5 py-2 font-[family-name:var(--font-heading)] font-bold text-sm">
-                    от {service.priceFrom} руб.
-                  </span>
-                  <Button variant="secondary" href="#cta-service" className="!border-white !text-white hover:!bg-white hover:!text-primary">
+                  <Button
+                    variant="secondary"
+                    href="#cta-service"
+                    className="!border-white !text-white hover:!bg-white hover:!text-primary"
+                  >
                     Заказать
                     <ArrowRight size={16} />
                   </Button>
@@ -92,7 +178,7 @@ export default async function ServicePage({ params }: Props) {
               <div className="aspect-square rounded-2xl overflow-hidden relative">
                 <Image
                   src={service.heroImage}
-                  alt={service.title}
+                  alt={`${service.title} — профессиональная химчистка на дому в Москве и МО`}
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -107,7 +193,7 @@ export default async function ServicePage({ params }: Props) {
           <Container>
             <div className="max-w-3xl mx-auto">
               <h2 className="font-[family-name:var(--font-heading)] font-bold text-[26px] leading-8 sm:text-3xl sm:leading-[40px]">
-                О&nbsp;услуге
+                О&nbsp;услуге &laquo;{service.title}&raquo;
               </h2>
               <div className="mt-6 text-text-secondary leading-relaxed whitespace-pre-line">
                 {service.fullDescription}
@@ -163,8 +249,11 @@ export default async function ServicePage({ params }: Props) {
                     {step.description}
                   </p>
                   {idx < service.steps.length - 1 && (
-                    <div className="absolute top-8 -right-4 hidden md:block text-text-secondary/30">
-                      →
+                    <div
+                      className="absolute top-8 -right-4 hidden md:block text-text-secondary/30"
+                      aria-hidden="true"
+                    >
+                      &rarr;
                     </div>
                   )}
                 </div>
@@ -182,7 +271,7 @@ export default async function ServicePage({ params }: Props) {
               </p>
             </div>
             <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] text-center max-md:text-[26px] max-md:leading-8">
-              Читайте также
+              Читайте также о {service.title.toLowerCase()}
             </h2>
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {service.articles.map((article) => (
@@ -208,7 +297,7 @@ export default async function ServicePage({ params }: Props) {
         <Section>
           <Container>
             <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] text-center max-md:text-[26px] max-md:leading-8">
-              Частые вопросы
+              Частые вопросы о {service.title.toLowerCase()}
             </h2>
             <div className="mt-10 max-w-3xl mx-auto space-y-4">
               {service.faq.map((item, i) => (
@@ -236,7 +325,7 @@ export default async function ServicePage({ params }: Props) {
           <Container className="py-16 max-md:py-10">
             <div className="max-w-2xl mx-auto text-center">
               <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] max-md:text-[26px] max-md:leading-8">
-                Закажите {service.title.toLowerCase()}
+                Закажите {service.title.toLowerCase()} в Москве
               </h2>
               <p className="mt-3 text-white/70">
                 Оставьте заявку — перезвоним в течение 15 минут и согласуем
@@ -266,7 +355,7 @@ export default async function ServicePage({ params }: Props) {
         <Section>
           <Container>
             <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] text-center max-md:text-[26px] max-md:leading-8">
-              Другие услуги
+              Другие услуги химчистки
             </h2>
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {otherServices.slice(0, 5).map((s) => (

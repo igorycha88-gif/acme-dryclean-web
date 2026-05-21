@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -9,16 +10,53 @@ import Container from "@/components/ui/Container";
 import Section from "@/components/ui/Section";
 import Button from "@/components/ui/Button";
 import { SERVICES, CONTACTS } from "@/lib/constants";
+import {
+  generateBreadcrumbJsonLd,
+  generateLocalBusinessJsonLd,
+} from "@/lib/structuredData";
+
+const SITE_URL = "https://da-dryclean.ru";
 
 export const metadata: Metadata = {
-  title: "Все услуги — D&A Dry Cleaning",
+  title:
+    "Все услуги химчистки на дому в Москве — цены, описание | D&A Dry Cleaning",
   description:
-    "Профессиональная выездная химчистка в Москве и МО. Диваны, ковры, матрасы, автомобили, шторы, ковролин. Выезд бесплатно.",
+    "Полный каталог услуг выездной химчистки: диваны, ковры, матрасы, салон авто, шторы, ковролин. Профессиональное оборудование Karcher. Без предоплаты. Выезд по Москве и МО бесплатно.",
+  alternates: {
+    canonical: `${SITE_URL}/uslugi`,
+  },
+  openGraph: {
+    title: "Все услуги химчистки на дому в Москве — D&A Dry Cleaning",
+    description:
+      "Полный каталог услуг выездной химчистки: диваны, ковры, матрасы, салон авто, шторы, ковролин.",
+    url: `${SITE_URL}/uslugi`,
+    type: "website",
+  },
 };
 
 export default function AllServicesPage() {
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd([
+    { name: "Главная", url: "/" },
+    { name: "Услуги", url: "/uslugi" },
+  ]);
+  const localBusinessJsonLd = generateLocalBusinessJsonLd();
+
   return (
     <>
+      <Script
+        id="structured-data-breadcrumb"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbJsonLd),
+        }}
+      />
+      <Script
+        id="structured-data-local-business"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(localBusinessJsonLd),
+        }}
+      />
       <TopBar />
       <Navigation />
       <main>
@@ -39,15 +77,15 @@ export default function AllServicesPage() {
                   href={`/uslugi/${service.slug}`}
                   className="group rounded-xl border border-gray-100 bg-white p-6 transition-all duration-400 hover:-translate-y-1 hover:shadow-lg"
                 >
-                    <div className="aspect-square rounded-lg overflow-hidden relative">
-                      <Image
-                        src={service.image}
-                        alt={service.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      />
-                    </div>
+                  <div className="aspect-square rounded-lg overflow-hidden relative">
+                    <Image
+                      src={service.image}
+                      alt={`${service.title} — профессиональная химчистка на дому в Москве`}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                    />
+                  </div>
                   <h2 className="mt-4 font-[family-name:var(--font-heading)] font-bold text-lg sm:text-xl">
                     {service.title}
                   </h2>
@@ -70,13 +108,14 @@ export default function AllServicesPage() {
                 Позвоните нам — обсудим ваш запрос и подберём решение
               </p>
               <div className="mt-6 flex justify-center gap-4 max-md:flex-col max-md:items-center">
-                <Button
-                  variant="primary"
-                  href={`tel:${CONTACTS.phoneRaw}`}
-                >
+                <Button variant="primary" href={`tel:${CONTACTS.phoneRaw}`}>
                   {CONTACTS.phone}
                 </Button>
-                <Button variant="secondary" href="/#cta-form" className="!border-white !text-white hover:!bg-white hover:!text-primary">
+                <Button
+                  variant="secondary"
+                  href="/#cta-form"
+                  className="!border-white !text-white hover:!bg-white hover:!text-primary"
+                >
                   Оставить заявку
                 </Button>
               </div>
