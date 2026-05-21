@@ -63,12 +63,12 @@ export default function BeforeAfter() {
           Переместите ползунок, чтобы увидеть разницу
         </p>
 
-        <div className="mt-6 flex justify-center gap-2">
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveTab(cat)}
-              className={`rounded-full px-4 py-2 text-sm transition-colors duration-300 ${
+              className={`rounded-full px-3 py-1.5 text-xs sm:px-4 sm:py-2 sm:text-sm transition-colors duration-300 ${
                 activeTab === cat
                   ? "bg-primary text-white"
                   : "bg-bg-alt text-text-primary hover:bg-gray-200"

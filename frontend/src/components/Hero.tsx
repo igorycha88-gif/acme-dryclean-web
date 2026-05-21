@@ -14,11 +14,11 @@ export default function Hero() {
       <Container className="relative z-10 py-20 max-md:py-12">
         <div className="max-w-3xl">
           <h1 className="font-[family-name:var(--font-heading)] font-extrabold text-5xl leading-[56px] max-md:text-[32px] max-md:leading-10">
-            Профессиональная выездная химчистка в&nbsp;Москве и&nbsp;МО
+            Профессиональная выездная химчистка мебели на&nbsp;дому в&nbsp;Москве и&nbsp;МО
           </h1>
           <p className="mt-4 text-lg text-white/80 max-w-2xl max-md:text-base">
-            Мебель, ковры, матрасы, автомобили — приедем, почистим, вернём как
-            новый. Без предоплаты.
+            Химчистка диванов, ковров, матрасов, штор и салона автомобиля с выездом к вам.
+            Без предоплаты. Оплата по факту.
           </p>
 
           <div className="mt-8 flex gap-3 max-md:flex-col">
@@ -27,7 +27,7 @@ export default function Hero() {
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="Введите адрес или район"
-              aria-label="Адрес или район"
+              aria-label="Адрес или район для выезда мастера"
               className="flex-1 h-12 rounded-[28px] px-6 text-text-primary bg-white placeholder:text-text-secondary outline-none"
             />
             <Button variant="primary">
@@ -36,7 +36,7 @@ export default function Hero() {
             </Button>
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-4 text-sm text-white/70">
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/70">
             <span className="flex items-center gap-1">
               {[...Array(5)].map((_, i) => (
                 <Star

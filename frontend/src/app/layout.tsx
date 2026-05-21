@@ -1,19 +1,81 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 
+const SITE_URL = "https://da-dryclean.ru";
+const SITE_NAME = "D&A Dry Cleaning";
+const OG_IMAGE = "/og-image.png";
+
 export const metadata: Metadata = {
-  title: "Dry Cleaning D&A — Профессиональная выездная химчистка в Москве и МО",
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Химчистка мебели на дому в Москве — D&A Dry Cleaning | Цены",
+    template: `%s — ${SITE_NAME}`,
+  },
   description:
-    "Мебель, ковры, матрасы, автомобили — приедем, почистим, вернём как новый. Без предоплаты. Работаем ежедневно 09:00–21:00.",
+    "Профессиональная выездная химчистка мягкой мебели, ковров, матрасов, штор и салона авто в Москве и МО. Без предоплаты. Гарантия результата. Ежедневно 09:00–21:00.",
   keywords: [
-    "химчистка",
-    "выездная химчистка",
-    "чистка диванов",
-    "чистка ковров",
-    "чистка матрасов",
-    "Москва",
-    "Московская область",
+    "химчистка мебели на дому москва",
+    "химчистка диванов москва",
+    "химчистка ковров на дому москва",
+    "химчистка матрасов москва",
+    "химчистка салона автомобиля москва",
+    "химчистка штор на дому москва",
+    "химчистка ковролина москва",
+    "профессиональная химчистка москва",
+    "выездная химчистка москва",
+    "химчистка мягкой мебели цена",
+    "чистка дивана от пятен",
+    "удаление запаха с мебели",
+    "химчистка мебели с выездом",
+    "химчистка без предоплаты москва",
   ],
+  authors: [{ name: "D&A Dry Cleaning" }],
+  creator: "D&A Dry Cleaning",
+  publisher: "D&A Dry Cleaning",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    locale: "ru_RU",
+    url: SITE_URL,
+    siteName: SITE_NAME,
+    title: "Химчистка мебели на дому в Москве — D&A Dry Cleaning",
+    description:
+      "Профессиональная выездная химчистка мягкой мебели, ковров, матрасов, штор и салона авто. Без предоплаты. Гарантия результата.",
+    images: [
+      {
+        url: OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "D&A Dry Cleaning — Профессиональная химчистка на дому в Москве",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Химчистка мебели на дому в Москве — D&A Dry Cleaning",
+    description:
+      "Профессиональная выездная химчистка мягкой мебели, ковров, матрасов, штор и салона авто. Без предоплаты.",
+    images: [OG_IMAGE],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  verification: {
+    yandex: "YOUR_YANDEX_VERIFICATION_CODE",
+    google: "YOUR_GOOGLE_VERIFICATION_CODE",
+  },
+  category: "business",
 };
 
 export default function RootLayout({
@@ -34,8 +96,59 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Montserrat:wght@400;600;700;800&display=swap"
           rel="stylesheet"
         />
+        <link
+          rel="icon"
+          type="image/x-icon"
+          href="/favicon.ico"
+        />
+        <meta
+          name="geo.region"
+          content="RU-MOW"
+        />
+        <meta
+          name="geo.placename"
+          content="Москва"
+        />
+        <meta
+          name="geo.position"
+          content="55.7558;37.6173"
+        />
+        <meta
+          name="ICBM"
+          content="55.7558, 37.6173"
+        />
+        <Script
+          id="yandex-metrica"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+              m[i].l=1*new Date();
+              for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+              k=e.createElement(t);a=e.getElementsByTagName(t)[0];k.async=1;k.src=r;a.parentNode.insertBefore(k,a)})
+              (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+              ym(109330668, "init", {
+                clickmap: true,
+                trackLinks: true,
+                accurateTrackBounce: true,
+                webvisor: true,
+                ecommerce: "dataLayer",
+              });
+            `,
+          }}
+        />
       </head>
       <body className="min-h-full flex flex-col font-sans">
+        <noscript>
+          <div>
+            <img
+              src="https://mc.yandex.ru/watch/109330668"
+              style={{ position: "absolute", left: "-9999px" }}
+              alt=""
+            />
+          </div>
+        </noscript>
         {children}
       </body>
     </html>

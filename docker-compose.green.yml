@@ -1,0 +1,111 @@
+# Blue-Green: GREEN окружение
+# Порты: frontend:3002, content:8012, postgres:5434, redis:6381, rabbitmq:5674
+
+services:
+  frontend-green:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: dryclean/frontend:${VERSION:-latest}
+    container_name: frontend-green
+    expose:
+      - "3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=/api
+      - NEXT_PUBLIC_CONTENT_API_URL=/api/content
+    labels:
+      - "deploy.env=green"
+      - "deploy.version=${VERSION:-latest}"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  postgres-green:
+    image: postgres:16
+    container_name: postgres-green
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dryclean}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-dryclean_content}
+    volumes:
+      - postgres_green_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    labels:
+      - "deploy.env=green"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dryclean}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis-green:
+    image: redis:7
+    container_name: redis-green
+    expose:
+      - "6379"
+    labels:
+      - "deploy.env=green"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  rabbitmq-green:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-green
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-dryclean}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    expose:
+      - "5672"
+      - "15672"
+    labels:
+      - "deploy.env=green"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  content-green:
+    build:
+      context: ./backend/services/content
+      dockerfile: Dockerfile
+    image: dryclean/content:${VERSION:-latest}
+    container_name: content-green
+    expose:
+      - "8011"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@postgres-green:5432/${POSTGRES_DB:-dryclean_content}
+      - DATABASE_URL_SYNC=postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@postgres-green:5432/${POSTGRES_DB:-dryclean_content}
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - content_green_uploads:/app/uploads
+    depends_on:
+      postgres-green:
+        condition: service_healthy
+    labels:
+      - "deploy.env=green"
+      - "deploy.version=${VERSION:-latest}"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres_green_data:
+  content_green_uploads:

@@ -41,7 +41,7 @@ export default function WhyUs() {
           {advantages.map((item) => (
             <div
               key={item.title}
-              className="rounded-xl border border-gray-100 bg-white p-6 text-center"
+              className="rounded-xl border border-gray-100 bg-white p-4 sm:p-6 text-center"
             >
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-secondary/10 text-secondary">
                 <item.icon size={24} />

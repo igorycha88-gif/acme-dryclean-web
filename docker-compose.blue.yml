@@ -1,0 +1,111 @@
+# Blue-Green: BLUE окружение
+# Порты: frontend:3001, content:8011, postgres:5433, redis:6380, rabbitmq:5673
+
+services:
+  frontend-blue:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: dryclean/frontend:${VERSION:-latest}
+    container_name: frontend-blue
+    expose:
+      - "3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=/api
+      - NEXT_PUBLIC_CONTENT_API_URL=/api/content
+    labels:
+      - "deploy.env=blue"
+      - "deploy.version=${VERSION:-latest}"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  postgres-blue:
+    image: postgres:16
+    container_name: postgres-blue
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-dryclean}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-dryclean_content}
+    volumes:
+      - postgres_blue_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    labels:
+      - "deploy.env=blue"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dryclean}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis-blue:
+    image: redis:7
+    container_name: redis-blue
+    expose:
+      - "6379"
+    labels:
+      - "deploy.env=blue"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  rabbitmq-blue:
+    image: rabbitmq:3-management
+    container_name: rabbitmq-blue
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-dryclean}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
+    expose:
+      - "5672"
+      - "15672"
+    labels:
+      - "deploy.env=blue"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  content-blue:
+    build:
+      context: ./backend/services/content
+      dockerfile: Dockerfile
+    image: dryclean/content:${VERSION:-latest}
+    container_name: content-blue
+    expose:
+      - "8011"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@postgres-blue:5432/${POSTGRES_DB:-dryclean_content}
+      - DATABASE_URL_SYNC=postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@postgres-blue:5432/${POSTGRES_DB:-dryclean_content}
+      - UPLOAD_DIR=/app/uploads
+    volumes:
+      - content_blue_uploads:/app/uploads
+    depends_on:
+      postgres-blue:
+        condition: service_healthy
+    labels:
+      - "deploy.env=blue"
+      - "deploy.version=${VERSION:-latest}"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8011/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres_blue_data:
+  content_blue_uploads:
