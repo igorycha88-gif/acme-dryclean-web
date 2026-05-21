@@ -129,6 +129,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <noscript>
           <div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="https://mc.yandex.ru/watch/109330668"
               style={{ position: "absolute", left: "-9999px" }}

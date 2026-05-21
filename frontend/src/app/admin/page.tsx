@@ -1,5 +1,6 @@
+import Link from "next/link";
 import AdminLayout from "@/lib/components/AdminLayout";
-import { ShoppingBag, MessageSquare, Star, Image } from "lucide-react";
+import { ShoppingBag, MessageSquare, Star, ImageIcon } from "lucide-react";
 
 async function getStats() {
   const baseUrl = process.env.NEXT_PUBLIC_CONTENT_API_URL || "http://localhost:8011";
@@ -35,7 +36,7 @@ export default async function AdminDashboard() {
     { label: "Услуг", value: stats.services, icon: ShoppingBag, color: "bg-blue-500" },
     { label: "FAQ", value: stats.faq, icon: MessageSquare, color: "bg-green-500" },
     { label: "Отзывов", value: stats.reviews, icon: Star, color: "bg-yellow-500" },
-    { label: "Медиафайлов", value: stats.media, icon: Image, color: "bg-purple-500" },
+    { label: "Медиафайлов", value: stats.media, icon: ImageIcon, color: "bg-purple-500" },
   ];
 
   return (
@@ -66,30 +67,30 @@ export default async function AdminDashboard() {
         <div className="mt-8 bg-white rounded-xl p-6 border border-gray-100">
           <h2 className="font-semibold mb-4">Быстрые действия</h2>
           <div className="flex gap-4">
-            <a
+            <Link
               href="/admin/services/new"
               className="px-4 py-2 bg-primary text-white rounded-lg hover:opacity-90 transition-opacity"
             >
               Добавить услугу
-            </a>
-            <a
+            </Link>
+            <Link
               href="/admin/faq/new"
               className="px-4 py-2 bg-green-500 text-white rounded-lg hover:opacity-90 transition-opacity"
             >
               Добавить FAQ
-            </a>
-            <a
+            </Link>
+            <Link
               href="/admin/reviews/new"
               className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:opacity-90 transition-opacity"
             >
               Добавить отзыв
-            </a>
-            <a
+            </Link>
+            <Link
               href="/admin/media"
               className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:opacity-90 transition-opacity"
             >
               Загрузить файл
-            </a>
+            </Link>
           </div>
         </div>
       </div>

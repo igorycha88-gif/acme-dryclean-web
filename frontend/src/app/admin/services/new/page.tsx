@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { contentApi, Service } from "@/lib/api";
+import { contentApi } from "@/lib/api";
 import { ArrowLeft, Save } from "lucide-react";
 
 export default function NewServicePage() {

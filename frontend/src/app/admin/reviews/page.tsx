@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { contentApi, Review, ReviewListResponse } from "@/lib/api";
+import { contentApi, ReviewListResponse } from "@/lib/api";
 import { Plus, Pencil, Trash2, Search, ChevronLeft, ChevronRight, ToggleLeft, Star } from "lucide-react";
 
 export default function ReviewsPage() {
@@ -11,14 +11,14 @@ export default function ReviewsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  useEffect(() => { loadData(); }, [page]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const result = await contentApi.reviews.list(page, 20, search || undefined);
     setData(result);
     setLoading(false);
-  }
+  }, [page, search]);
+
+  useEffect(() => { loadData(); }, [loadData]);
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
