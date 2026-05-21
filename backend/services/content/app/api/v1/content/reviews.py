@@ -1,15 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
 from uuid import UUID
-from typing import Optional
 
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.v1.content.auth import get_current_admin
 from app.database import get_db
 from app.models.models import Review, User
-from app.schemas.schemas import (
-    ReviewCreate, ReviewUpdate, ReviewResponse, ReviewListResponse
-)
-from app.api.v1.content.auth import get_current_admin
+from app.schemas.schemas import ReviewCreate, ReviewListResponse, ReviewResponse, ReviewUpdate
 
 router = APIRouter(prefix="/reviews", tags=["reviews"])
 
@@ -18,27 +16,27 @@ router = APIRouter(prefix="/reviews", tags=["reviews"])
 async def list_reviews(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
-    search: Optional[str] = None,
-    is_active: Optional[bool] = None,
+    search: str | None = None,
+    is_active: bool | None = None,
     db: AsyncSession = Depends(get_db),
 ):
     query = select(Review)
-    
+
     if search:
         query = query.where(Review.author.ilike(f"%{search}%"))
     if is_active is not None:
         query = query.where(Review.is_active == is_active)
-    
+
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
-    
+
     query = query.order_by(Review.created_at.desc())
     query = query.offset((page - 1) * per_page).limit(per_page)
-    
+
     result = await db.execute(query)
     items = result.scalars().all()
-    
+
     return ReviewListResponse(
         items=[ReviewResponse.model_validate(item) for item in items],
         total=total,
@@ -83,11 +81,11 @@ async def update_review(
     review = result.scalar_one_or_none()
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
-    
+
     update_data = data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(review, key, value)
-    
+
     await db.commit()
     await db.refresh(review)
     return ReviewResponse.model_validate(review)
@@ -103,7 +101,7 @@ async def delete_review(
     review = result.scalar_one_or_none()
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
-    
+
     await db.delete(review)
     await db.commit()
 
@@ -118,7 +116,7 @@ async def toggle_review_active(
     review = result.scalar_one_or_none()
     if not review:
         raise HTTPException(status_code=404, detail="Review not found")
-    
+
     review.is_active = not review.is_active
     await db.commit()
     await db.refresh(review)

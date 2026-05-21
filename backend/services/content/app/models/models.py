@@ -1,8 +1,9 @@
-from sqlalchemy import Column, String, Text, Boolean, Integer, Numeric, DateTime, LargeBinary
+import uuid
+
+from sqlalchemy import Boolean, Column, DateTime, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql import func
-import uuid
 
 Base = declarative_base()
 

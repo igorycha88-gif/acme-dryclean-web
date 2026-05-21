@@ -6,8 +6,8 @@ services:
     expose:
       - "3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost/api
-      - NEXT_PUBLIC_CONTENT_API_URL=http://localhost
+      - NEXT_PUBLIC_API_URL=https://da-dryclean.ru/api
+      - NEXT_PUBLIC_CONTENT_API_URL=https://da-dryclean.ru
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -76,13 +76,28 @@ services:
     image: nginx:alpine
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-var:/var/lib/letsencrypt:ro
+      - webroot:/var/www/certbot:ro
     depends_on:
       - frontend
       - content
     restart: unless-stopped
 
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/lib/letsencrypt
+      - webroot:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+
 volumes:
   postgres_data:
   content_uploads:
+  certbot-etc:
+  certbot-var:
+  webroot:

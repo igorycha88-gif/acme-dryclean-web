@@ -1,0 +1,22 @@
+{
+  "name": "D&A Dry Cleaning — Химчистка на дому",
+  "short_name": "D&A",
+  "description": "Профессиональная выездная химчистка мягкой мебели, ковров, матрасов, штор и салона авто в Москве и МО",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0A1F44",
+  "theme_color": "#0A1F44",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "/icon?s=192",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon?s=512",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

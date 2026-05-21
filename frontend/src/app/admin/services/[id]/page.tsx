@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { contentApi, Service } from "@/lib/api";
+import { contentApi } from "@/lib/api";
 import { ArrowLeft, Save } from "lucide-react";
 
 export default function EditServicePage({ params }: { params: { id: string } }) {

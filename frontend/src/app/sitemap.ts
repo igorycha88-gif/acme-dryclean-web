@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getAllServiceSlugs } from "@/lib/serviceData";
+import { BLOG_ARTICLES } from "@/lib/blogData";
 
 const BASE_URL = "https://da-dryclean.ru";
 
@@ -19,6 +20,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    {
+      url: `${BASE_URL}/blog`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
   ];
 
   const servicePages: MetadataRoute.Sitemap = serviceSlugs.map((slug) => ({
@@ -28,5 +35,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...servicePages];
+  const blogPages: MetadataRoute.Sitemap = BLOG_ARTICLES.map((article) => ({
+    url: `${BASE_URL}/blog/${article.slug}`,
+    lastModified: new Date(article.updatedAt),
+    changeFrequency: "monthly",
+    priority: 0.7,
+  }));
+
+  return [...staticPages, ...servicePages, ...blogPages];
 }

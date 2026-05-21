@@ -16,6 +16,7 @@ export const NAV_LINKS = [
   { label: "Услуги", href: "#services" },
   { label: "Организациям", href: "#b2b" },
   { label: "О компании", href: "#about" },
+  { label: "Блог", href: "/blog" },
   { label: "Отзывы", href: "#reviews" },
   { label: "Контакты", href: "#cta-form" },
 ] as const;

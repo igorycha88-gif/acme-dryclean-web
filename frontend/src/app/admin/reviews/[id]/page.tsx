@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { contentApi, Review } from "@/lib/api";
+import { contentApi } from "@/lib/api";
 import { ArrowLeft, Save, Star } from "lucide-react";
 
 export default function EditReviewPage({ params }: { params: { id: string } }) {

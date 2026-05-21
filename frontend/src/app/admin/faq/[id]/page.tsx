@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { contentApi, FAQ } from "@/lib/api";
+import { contentApi } from "@/lib/api";
 import { ArrowLeft, Save } from "lucide-react";
 
 export default function EditFAQPage({ params }: { params: { id: string } }) {

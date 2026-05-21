@@ -1,10 +1,29 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
+import { Inter, Montserrat } from "next/font/google";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin", "cyrillic"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
+const montserrat = Montserrat({
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "600", "700", "800"],
+  variable: "--font-montserrat",
+  display: "swap",
+});
 
 const SITE_URL = "https://da-dryclean.ru";
 const SITE_NAME = "D&A Dry Cleaning";
-const OG_IMAGE = "/og-image.png";
+
+export const viewport: Viewport = {
+  themeColor: "#0A1F44",
+  width: "device-width",
+  initialScale: 1,
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -33,6 +52,7 @@ export const metadata: Metadata = {
   authors: [{ name: "D&A Dry Cleaning" }],
   creator: "D&A Dry Cleaning",
   publisher: "D&A Dry Cleaning",
+  manifest: "/manifest.webmanifest",
   alternates: {
     canonical: "/",
   },
@@ -44,21 +64,12 @@ export const metadata: Metadata = {
     title: "Химчистка мебели на дому в Москве — D&A Dry Cleaning",
     description:
       "Профессиональная выездная химчистка мягкой мебели, ковров, матрасов, штор и салона авто. Без предоплаты. Гарантия результата.",
-    images: [
-      {
-        url: OG_IMAGE,
-        width: 1200,
-        height: 630,
-        alt: "D&A Dry Cleaning — Профессиональная химчистка на дому в Москве",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Химчистка мебели на дому в Москве — D&A Dry Cleaning",
     description:
       "Профессиональная выездная химчистка мягкой мебели, ковров, матрасов, штор и салона авто. Без предоплаты.",
-    images: [OG_IMAGE],
   },
   robots: {
     index: true,
@@ -72,8 +83,8 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    yandex: "YOUR_YANDEX_VERIFICATION_CODE",
-    google: "YOUR_GOOGLE_VERIFICATION_CODE",
+    yandex: process.env.NEXT_PUBLIC_YANDEX_VERIFICATION || "",
+    google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION || "",
   },
   category: "business",
 };
@@ -84,39 +95,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ru" className="h-full antialiased">
+    <html
+      lang="ru"
+      className={`h-full antialiased ${inter.variable} ${montserrat.variable}`}
+    >
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=Montserrat:wght@400;600;700;800&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          rel="icon"
-          type="image/x-icon"
-          href="/favicon.ico"
-        />
-        <meta
-          name="geo.region"
-          content="RU-MOW"
-        />
-        <meta
-          name="geo.placename"
-          content="Москва"
-        />
-        <meta
-          name="geo.position"
-          content="55.7558;37.6173"
-        />
-        <meta
-          name="ICBM"
-          content="55.7558, 37.6173"
-        />
+        <meta name="geo.region" content="RU-MOW" />
+        <meta name="geo.placename" content="Москва" />
+        <meta name="geo.position" content="55.7558;37.6173" />
+        <meta name="ICBM" content="55.7558, 37.6173" />
         <Script
           id="yandex-metrica"
           strategy="afterInteractive"
@@ -142,6 +129,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-sans">
         <noscript>
           <div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="https://mc.yandex.ru/watch/109330668"
               style={{ position: "absolute", left: "-9999px" }}

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { contentApi, Media, MediaListResponse } from "@/lib/api";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Image from "next/image";
+import { contentApi, MediaListResponse } from "@/lib/api";
 import { Upload, Trash2, Copy, ChevronLeft, ChevronRight, Image as ImageIcon } from "lucide-react";
 
 export default function MediaPage() {
@@ -11,16 +12,16 @@ export default function MediaPage() {
   const [page, setPage] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    loadData();
-  }, [page]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true);
     const result = await contentApi.media.list(page, 20);
     setData(result);
     setLoading(false);
-  }
+  }, [page]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -91,10 +92,13 @@ export default function MediaPage() {
               <div key={media.id} className="group relative border border-gray-100 rounded-lg overflow-hidden">
                 <div className="aspect-square bg-gray-100 flex items-center justify-center">
                   {media.mime_type.startsWith("image/") ? (
-                    <img
+                    <Image
                       src={`${process.env.NEXT_PUBLIC_CONTENT_API_URL || "http://localhost:8011"}${media.url}`}
                       alt={media.alt_text || ""}
+                      width={200}
+                      height={200}
                       className="w-full h-full object-cover"
+                      unoptimized
                     />
                   ) : (
                     <ImageIcon className="text-gray-400" size={40} />

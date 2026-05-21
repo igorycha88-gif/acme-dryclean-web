@@ -24,6 +24,7 @@ import {
   getAllServiceSlugs,
   getOtherServices,
 } from "@/lib/serviceData";
+import { getRelatedArticles } from "@/lib/blogData";
 import {
   generateServiceJsonLd,
   generateFAQPageJsonLd,
@@ -92,6 +93,7 @@ export default async function ServicePage({ params }: Props) {
   if (!service) notFound();
 
   const otherServices = getOtherServices(slug);
+  const relatedArticles = getRelatedArticles(slug);
 
   const serviceJsonLd = generateServiceJsonLd(slug);
   const faqJsonLd = generateFAQPageJsonLd(service.faq);
@@ -274,22 +276,52 @@ export default async function ServicePage({ params }: Props) {
               Читайте также о {service.title.toLowerCase()}
             </h2>
             <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {service.articles.map((article) => (
-                <article
-                  key={article.slug}
-                  className="rounded-xl border border-gray-100 bg-white p-6 transition-all duration-300 hover:shadow-md"
-                >
-                  <div className="aspect-[16/9] rounded-lg bg-bg-alt flex items-center justify-center text-text-secondary text-sm">
-                    {article.title.slice(0, 40)}...
-                  </div>
-                  <h3 className="mt-4 font-[family-name:var(--font-heading)] font-bold text-lg leading-snug">
-                    {article.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-text-secondary leading-relaxed">
-                    {article.excerpt}
-                  </p>
-                </article>
-              ))}
+              {relatedArticles.length > 0 ? (
+                relatedArticles.slice(0, 3).map((article) => (
+                  <Link
+                    key={article.slug}
+                    href={`/blog/${article.slug}`}
+                    className="group rounded-xl border border-gray-100 bg-white p-6 transition-all duration-300 hover:shadow-md"
+                  >
+                    <div className="text-xs text-text-secondary mb-2">
+                      <time dateTime={article.publishedAt}>
+                        {new Date(article.publishedAt).toLocaleDateString(
+                          "ru-RU",
+                          {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          }
+                        )}
+                      </time>
+                    </div>
+                    <h3 className="font-[family-name:var(--font-heading)] font-bold text-lg leading-snug group-hover:text-secondary transition-colors">
+                      {article.title}
+                    </h3>
+                    <p className="mt-2 text-sm text-text-secondary leading-relaxed line-clamp-2">
+                      {article.excerpt}
+                    </p>
+                    <span className="mt-3 inline-flex items-center gap-1 text-sm text-secondary group-hover:text-accent transition-colors">
+                      Читать
+                      <ArrowRight size={14} />
+                    </span>
+                  </Link>
+                ))
+              ) : (
+                service.articles.map((article) => (
+                  <article
+                    key={article.slug}
+                    className="rounded-xl border border-gray-100 bg-white p-6"
+                  >
+                    <h3 className="font-[family-name:var(--font-heading)] font-bold text-lg leading-snug">
+                      {article.title}
+                    </h3>
+                    <p className="mt-2 text-sm text-text-secondary leading-relaxed">
+                      {article.excerpt}
+                    </p>
+                  </article>
+                ))
+              )}
             </div>
           </Container>
         </Section>

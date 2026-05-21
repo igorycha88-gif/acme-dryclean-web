@@ -1,13 +1,14 @@
-from fastapi import FastAPI, Request, HTTPException, status
+import logging
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from contextlib import asynccontextmanager
-import logging
 
+from app.api.v1 import api_router
 from app.config import settings
 from app.database import engine
 from app.models.models import Base
-from app.api.v1 import api_router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

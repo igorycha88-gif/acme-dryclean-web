@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from app.api.v1.content import services, faq, reviews, media
+
+from app.api.v1.content import faq, media, reviews, services
 
 router = APIRouter(prefix="/content")
 

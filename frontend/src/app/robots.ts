@@ -5,18 +5,18 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "Yandex",
-        allow: ["/", "/uslugi", "/uslugi/"],
-        disallow: ["/admin", "/api/", "/_next/", "/images/"],
+        allow: ["/", "/uslugi", "/uslugi/", "/blog", "/blog/", "/images/"],
+        disallow: ["/admin", "/api/", "/_next/"],
       },
       {
         userAgent: "Googlebot",
-        allow: ["/", "/uslugi", "/uslugi/"],
-        disallow: ["/admin", "/api/", "/_next/", "/images/"],
+        allow: ["/", "/uslugi", "/uslugi/", "/blog", "/blog/", "/images/"],
+        disallow: ["/admin", "/api/", "/_next/"],
       },
       {
         userAgent: "*",
-        allow: ["/", "/uslugi", "/uslugi/"],
-        disallow: ["/admin", "/api/", "/_next/", "/images/"],
+        allow: ["/", "/uslugi", "/uslugi/", "/blog", "/blog/", "/images/"],
+        disallow: ["/admin", "/api/", "/_next/"],
       },
     ],
     sitemap: "https://da-dryclean.ru/sitemap.xml",
