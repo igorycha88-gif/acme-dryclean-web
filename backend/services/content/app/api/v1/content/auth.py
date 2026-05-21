@@ -1,15 +1,15 @@
-from fastapi import APIRouter, HTTPException, status, Depends
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
-from passlib.context import CryptContext
-from jose import JWTError, jwt
-from datetime import datetime, timedelta
-from typing import Optional
 import logging
+from datetime import datetime, timedelta
 
-from app.database import get_db
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.config import settings
+from app.database import get_db
 from app.models.models import User
 from app.schemas.schemas import LoginRequest, TokenResponse, UserCreate, UserResponse
 

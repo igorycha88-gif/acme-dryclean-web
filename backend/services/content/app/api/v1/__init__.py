@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from app.api.v1 import content
 from app.api.v1.content import auth
 

@@ -1,17 +1,17 @@
-from pydantic import BaseModel, Field, ConfigDict
-from uuid import UUID
 from datetime import datetime
-from typing import Optional
 from decimal import Decimal
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ServiceBase(BaseModel):
     title: str = Field(..., max_length=200)
     slug: str = Field(..., max_length=200)
     description: str
-    image_url: Optional[str] = Field(None, max_length=500)
-    price: Optional[Decimal] = Field(None, decimal_places=2)
-    category: Optional[str] = Field(None, max_length=100)
+    image_url: str | None = Field(None, max_length=500)
+    price: Decimal | None = Field(None, decimal_places=2)
+    category: str | None = Field(None, max_length=100)
     is_active: bool = True
     sort_order: int = 0
 
@@ -21,14 +21,14 @@ class ServiceCreate(ServiceBase):
 
 
 class ServiceUpdate(BaseModel):
-    title: Optional[str] = Field(None, max_length=200)
-    slug: Optional[str] = Field(None, max_length=200)
-    description: Optional[str] = None
-    image_url: Optional[str] = Field(None, max_length=500)
-    price: Optional[Decimal] = Field(None, decimal_places=2)
-    category: Optional[str] = Field(None, max_length=100)
-    is_active: Optional[bool] = None
-    sort_order: Optional[int] = None
+    title: str | None = Field(None, max_length=200)
+    slug: str | None = Field(None, max_length=200)
+    description: str | None = None
+    image_url: str | None = Field(None, max_length=500)
+    price: Decimal | None = Field(None, decimal_places=2)
+    category: str | None = Field(None, max_length=100)
+    is_active: bool | None = None
+    sort_order: int | None = None
 
 
 class ServiceResponse(ServiceBase):
@@ -58,10 +58,10 @@ class FAQCreate(FAQBase):
 
 
 class FAQUpdate(BaseModel):
-    question: Optional[str] = Field(None, max_length=500)
-    answer: Optional[str] = None
-    is_active: Optional[bool] = None
-    sort_order: Optional[int] = None
+    question: str | None = Field(None, max_length=500)
+    answer: str | None = None
+    is_active: bool | None = None
+    sort_order: int | None = None
 
 
 class FAQResponse(FAQBase):
@@ -92,11 +92,11 @@ class ReviewCreate(ReviewBase):
 
 
 class ReviewUpdate(BaseModel):
-    author: Optional[str] = Field(None, max_length=100)
-    service: Optional[str] = Field(None, max_length=200)
-    rating: Optional[int] = Field(None, ge=1, le=5)
-    text: Optional[str] = None
-    is_active: Optional[bool] = None
+    author: str | None = Field(None, max_length=100)
+    service: str | None = Field(None, max_length=200)
+    rating: int | None = Field(None, ge=1, le=5)
+    text: str | None = None
+    is_active: bool | None = None
 
 
 class ReviewResponse(ReviewBase):
@@ -115,7 +115,7 @@ class ReviewListResponse(BaseModel):
 
 
 class MediaBase(BaseModel):
-    alt_text: Optional[str] = Field(None, max_length=200)
+    alt_text: str | None = Field(None, max_length=200)
 
 
 class MediaResponse(MediaBase):
@@ -144,7 +144,7 @@ class ReorderRequest(BaseModel):
 class UserBase(BaseModel):
     username: str = Field(..., max_length=100)
     email: str = Field(..., max_length=255)
-    full_name: Optional[str] = Field(None, max_length=200)
+    full_name: str | None = Field(None, max_length=200)
 
 
 class UserCreate(UserBase):
@@ -152,19 +152,19 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
-    username: Optional[str] = Field(None, max_length=100)
-    email: Optional[str] = Field(None, max_length=255)
-    full_name: Optional[str] = Field(None, max_length=200)
-    password: Optional[str] = Field(None, min_length=6)
-    is_active: Optional[bool] = None
-    is_admin: Optional[bool] = None
+    username: str | None = Field(None, max_length=100)
+    email: str | None = Field(None, max_length=255)
+    full_name: str | None = Field(None, max_length=200)
+    password: str | None = Field(None, min_length=6)
+    is_active: bool | None = None
+    is_admin: bool | None = None
 
 
 class UserResponse(BaseModel):
     id: UUID
     username: str
     email: str
-    full_name: Optional[str]
+    full_name: str | None
     is_active: bool
     is_admin: bool
     created_at: datetime

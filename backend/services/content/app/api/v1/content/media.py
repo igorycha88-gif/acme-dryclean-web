@@ -1,20 +1,18 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
-from fastapi.responses import FileResponse
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
-from uuid import UUID
-from pathlib import Path
-from datetime import datetime
-import aiofiles
-import os
 import uuid
-import mimetypes
+from pathlib import Path
+from uuid import UUID
 
+import aiofiles
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.v1.content.auth import get_current_admin
+from app.config import settings
 from app.database import get_db
 from app.models.models import Media, User
-from app.schemas.schemas import MediaResponse, MediaListResponse
-from app.config import settings
-from app.api.v1.content.auth import get_current_admin
+from app.schemas.schemas import MediaListResponse, MediaResponse
 
 router = APIRouter(prefix="/media", tags=["media"])
 
@@ -29,19 +27,17 @@ async def save_file(file: UploadFile) -> tuple[str, str, int]:
             status_code=400,
             detail=f"File type not allowed. Allowed: {settings.allowed_extensions}"
         )
-    
+
     unique_name = f"{uuid.uuid4()}.{ext}"
     file_path = UPLOAD_DIR / unique_name
-    
+
     content = await file.read()
     if len(content) > settings.max_upload_size:
         raise HTTPException(status_code=400, detail="File too large")
-    
+
     async with aiofiles.open(file_path, "wb") as f:
         await f.write(content)
-    
-    mime_type = mimetypes.guess_type(file.filename)[0] or "application/octet-stream"
-    
+
     return unique_name, file.filename, len(content)
 
 
@@ -52,16 +48,16 @@ async def list_media(
     db: AsyncSession = Depends(get_db),
 ):
     query = select(Media).order_by(Media.created_at.desc())
-    
+
     count_query = select(func.count()).select_from(query.subquery())
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
-    
+
     query = query.offset((page - 1) * per_page).limit(per_page)
-    
+
     result = await db.execute(query)
     items = result.scalars().all()
-    
+
     return MediaListResponse(
         items=[MediaResponse.model_validate(item) for item in items],
         total=total,
@@ -83,9 +79,9 @@ async def upload_file(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
-    
+
     url = f"/uploads/{unique_name}"
-    
+
     media = Media(
         filename=unique_name,
         original_name=original_name,
@@ -94,11 +90,11 @@ async def upload_file(
         size=size,
         alt_text=alt_text,
     )
-    
+
     db.add(media)
     await db.commit()
     await db.refresh(media)
-    
+
     return MediaResponse.model_validate(media)
 
 
@@ -124,11 +120,11 @@ async def delete_media(
     media = result.scalar_one_or_none()
     if not media:
         raise HTTPException(status_code=404, detail="Media not found")
-    
+
     file_path = UPLOAD_DIR / media.filename
     if file_path.exists():
         file_path.unlink()
-    
+
     await db.delete(media)
     await db.commit()
 
