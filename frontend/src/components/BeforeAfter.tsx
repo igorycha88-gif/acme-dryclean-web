@@ -14,7 +14,10 @@ const beforeAfterData: Record<
     before: { src: "/images/before-before-sofa.jpg", text: "Грязный диван (до)" },
     after: { src: "/images/after-sofa.jpg", text: "Чистый диван (после)" },
   },
-  "Ростовые куклы": { before: { text: "Грязная ростовая кукла (до)" }, after: { text: "Чистая ростовая кукла (после)" } },
+  "Ростовые куклы": {
+    before: { src: "/images/before-mascot.jpg", text: "Грязная ростовая кукла (до)" },
+    after: { src: "/images/after-mascot.jpg", text: "Чистая ростовая кукла (после)" },
+  },
   Матрасы: {
     before: { src: "/images/before-mattress.jpg", text: "Грязный матрас (до)" },
     after: { src: "/images/after-mattress.jpg", text: "Чистый матрас (после)" },
