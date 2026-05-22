@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from "react";
 import Container from "@/components/ui/Container";
 import Section from "@/components/ui/Section";
 
-const categories = ["Диваны", "Ковры", "Матрасы", "Автомобили"];
+const categories = ["Диваны", "Автомобили", "Матрасы", "Ростовые куклы"];
 
 const beforeAfterData: Record<
   string,
@@ -14,7 +14,7 @@ const beforeAfterData: Record<
     before: { src: "/images/before-before-sofa.jpg", text: "Грязный диван (до)" },
     after: { src: "/images/after-sofa.jpg", text: "Чистый диван (после)" },
   },
-  Ковры: { before: { text: "Грязный ковёр (до)" }, after: { text: "Чистый ковёр (после)" } },
+  "Ростовые куклы": { before: { text: "Грязная ростовая кукла (до)" }, after: { text: "Чистая ростовая кукла (после)" } },
   Матрасы: {
     before: { src: "/images/before-mattress.jpg", text: "Грязный матрас (до)" },
     after: { src: "/images/after-mattress.jpg", text: "Чистый матрас (после)" },
