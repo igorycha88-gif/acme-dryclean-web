@@ -1,6 +1,8 @@
 node_modules/
 .next/
 .DS_Store
+._*
+ sandwich panel constructions/
 *.pem
 .env*
 .vercel
