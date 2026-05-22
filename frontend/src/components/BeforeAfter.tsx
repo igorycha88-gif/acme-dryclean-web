@@ -8,20 +8,20 @@ const categories = ["Диваны", "Ковры", "Матрасы", "Автом�
 
 const beforeAfterData: Record<
   string,
-  { before: { src?: string; text: string }; after: string }
+  { before: { src?: string; text: string }; after: { src?: string; text: string } }
 > = {
   Диваны: {
     before: { src: "/images/before-before-sofa.jpg", text: "Грязный диван (до)" },
-    after: "Чистый диван (после)",
+    after: { src: "/images/after-sofa.jpg", text: "Чистый диван (после)" },
   },
-  Ковры: { before: { text: "Грязный ковёр (до)" }, after: "Чистый ковёр (после)" },
+  Ковры: { before: { text: "Грязный ковёр (до)" }, after: { text: "Чистый ковёр (после)" } },
   Матрасы: {
     before: { text: "Грязный матрас (до)" },
-    after: "Чистый матрас (после)",
+    after: { text: "Чистый матрас (после)" },
   },
   Автомобили: {
     before: { text: "Грязный салон (до)" },
-    after: "Чистый салон (после)",
+    after: { text: "Чистый салон (после)" },
   },
 };
 
@@ -123,7 +123,16 @@ export default function BeforeAfter() {
             className="absolute inset-0 flex items-center justify-center bg-green-50 text-text-secondary"
             style={{ clipPath: `inset(0 0 0 ${sliderPos}%)` }}
           >
-            {current.after}
+            {current.after.src ? (
+              <img
+                src={current.after.src}
+                alt={current.after.text}
+                className="h-full w-full object-cover"
+                draggable={false}
+              />
+            ) : (
+              current.after.text
+            )}
           </div>
 
           <div
