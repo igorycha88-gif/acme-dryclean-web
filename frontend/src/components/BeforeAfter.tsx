@@ -16,12 +16,12 @@ const beforeAfterData: Record<
   },
   Ковры: { before: { text: "Грязный ковёр (до)" }, after: { text: "Чистый ковёр (после)" } },
   Матрасы: {
-    before: { text: "Грязный матрас (до)" },
-    after: { text: "Чистый матрас (после)" },
+    before: { src: "/images/before-mattress.jpg", text: "Грязный матрас (до)" },
+    after: { src: "/images/after-mattress.jpg", text: "Чистый матрас (после)" },
   },
   Автомобили: {
-    before: { text: "Грязный салон (до)" },
-    after: { text: "Чистый салон (после)" },
+    before: { src: "/images/before-car.jpg", text: "Грязный салон (до)" },
+    after: { src: "/images/after-car.jpg", text: "Чистый салон (после)" },
   },
 };
 
