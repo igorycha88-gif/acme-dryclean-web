@@ -50,13 +50,22 @@ export default function Navigation() {
         </div>
 
         <div className="hidden lg:flex items-center gap-4">
-          <a
-            href={`tel:${CONTACTS.phoneRaw}`}
-            className="flex items-center gap-2 text-sm font-semibold text-primary"
-          >
-            <Phone size={16} />
-            {CONTACTS.phone}
-          </a>
+          <div className="flex flex-col items-end gap-0.5">
+            <a
+              href={`tel:${CONTACTS.phoneRaw}`}
+              className="flex items-center gap-2 text-sm font-semibold text-primary"
+            >
+              <Phone size={16} />
+              {CONTACTS.phone}
+            </a>
+            <a
+              href={`tel:${CONTACTS.phoneAltRaw}`}
+              className="flex items-center gap-2 text-sm font-semibold text-primary"
+            >
+              <Phone size={16} />
+              {CONTACTS.phoneAlt}
+            </a>
+          </div>
           <Button href="#cta-form">Оставить заявку</Button>
         </div>
 
@@ -92,13 +101,22 @@ export default function Navigation() {
               {link.label}
             </a>
           ))}
-          <a
-            href={`tel:${CONTACTS.phoneRaw}`}
-            className="flex items-center gap-2 text-lg font-semibold text-primary mt-4"
-          >
-            <Phone size={20} />
-            {CONTACTS.phone}
-          </a>
+          <div className="flex flex-col items-center gap-2 mt-4">
+            <a
+              href={`tel:${CONTACTS.phoneRaw}`}
+              className="flex items-center gap-2 text-lg font-semibold text-primary"
+            >
+              <Phone size={20} />
+              {CONTACTS.phone}
+            </a>
+            <a
+              href={`tel:${CONTACTS.phoneAltRaw}`}
+              className="flex items-center gap-2 text-lg font-semibold text-primary"
+            >
+              <Phone size={20} />
+              {CONTACTS.phoneAlt}
+            </a>
+          </div>
           <Button href="#cta-form" onClick={() => setMenuOpen(false)}>
             Оставить заявку
           </Button>

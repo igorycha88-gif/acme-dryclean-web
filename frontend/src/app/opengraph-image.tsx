@@ -91,7 +91,7 @@ export default function OgImage() {
               fontFamily: "sans-serif",
             }}
           >
-            +7 (495) 226-15-73
+            +7 (985) 226-15-73
           </div>
           <div
             style={{

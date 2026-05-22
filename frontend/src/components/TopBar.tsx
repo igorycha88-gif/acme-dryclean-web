@@ -26,13 +26,22 @@ export default function TopBar() {
             <Star size={12} className="text-warning fill-warning" />
             Яндекс Карты
           </span>
-          <a
-            href={`tel:${CONTACTS.phoneRaw}`}
-            className="flex items-center gap-1 md:hidden hover:text-secondary transition-colors"
-          >
-            <Phone size={12} />
-            {CONTACTS.phone}
-          </a>
+          <div className="flex items-center gap-3 md:hidden">
+            <a
+              href={`tel:${CONTACTS.phoneRaw}`}
+              className="flex items-center gap-1 hover:text-secondary transition-colors"
+            >
+              <Phone size={12} />
+              {CONTACTS.phone}
+            </a>
+            <a
+              href={`tel:${CONTACTS.phoneAltRaw}`}
+              className="flex items-center gap-1 hover:text-secondary transition-colors"
+            >
+              <Phone size={12} />
+              {CONTACTS.phoneAlt}
+            </a>
+          </div>
           <a
             href={`https://t.me/${CONTACTS.telegram.replace("@", "")}`}
             target="_blank"
