@@ -74,11 +74,11 @@ export default function Home() {
       <main>
         <Hero />
         <Services />
+        <B2BSection />
         <HowWeWork />
         <BeforeAfter />
         <WhyUs />
         <Promo />
-        <B2BSection />
         <Reviews />
         <CTAForm />
         <FAQ />
