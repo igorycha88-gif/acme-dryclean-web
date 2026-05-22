@@ -31,22 +31,6 @@ export const SERVICES = [
     image: "/images/services/sofa.jpg",
   },
   {
-    id: 2,
-    title: "Химчистка ковров",
-    slug: "himchistka-kovrov",
-    description:
-      "Глубокая чистка ковров с выездом на дом. Возвращаем первоначальный вид и свежесть.",
-    image: "/images/services/carpet.jpg",
-  },
-  {
-    id: 3,
-    title: "Химчистка матрасов",
-    slug: "himchistka-matrasov",
-    description:
-      "Дезинфекция и глубокая чистка матрасов. Удаление клещей, пятен, аллергенов.",
-    image: "/images/services/mattress.jpg",
-  },
-  {
     id: 4,
     title: "Химчистка авто",
     slug: "himchistka-salona-avtomobilya",
@@ -61,6 +45,22 @@ export const SERVICES = [
     description:
       "Профессиональная чистка и дезинфекция ростовых кукол. Удаление пятен, запахов, восстановление внешнего вида.",
     image: "/images/services/mascot.jpg",
+  },
+  {
+    id: 2,
+    title: "Химчистка ковров",
+    slug: "himchistka-kovrov",
+    description:
+      "Глубокая чистка ковров с выездом на дом. Возвращаем первоначальный вид и свежесть.",
+    image: "/images/services/carpet.jpg",
+  },
+  {
+    id: 3,
+    title: "Химчистка матрасов",
+    slug: "himchistka-matrasov",
+    description:
+      "Дезинфекция и глубокая чистка матрасов. Удаление клещей, пятен, аллергенов.",
+    image: "/images/services/mattress.jpg",
   },
   {
     id: 6,

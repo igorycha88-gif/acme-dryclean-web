@@ -5,10 +5,10 @@ import { CONTACTS } from "@/lib/constants";
 
 const serviceLinks = [
   { label: "Химчистка диванов", href: "/uslugi/himchistka-divanov" },
-  { label: "Химчистка ковров", href: "/uslugi/himchistka-kovrov" },
-  { label: "Химчистка матрасов", href: "/uslugi/himchistka-matrasov" },
   { label: "Химчистка салона авто", href: "/uslugi/himchistka-salona-avtomobilya" },
   { label: "Химчистка ростовых кукол", href: "/uslugi/himchistka-rostovyh-kukol" },
+  { label: "Химчистка ковров", href: "/uslugi/himchistka-kovrov" },
+  { label: "Химчистка матрасов", href: "/uslugi/himchistka-matrasov" },
   { label: "Химчистка ковролина", href: "/uslugi/himchistka-kovrolina" },
   { label: "Все услуги", href: "/uslugi" },
 ];
