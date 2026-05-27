@@ -200,7 +200,8 @@ jobs:
             export VERSION POSTGRES_PASSWORD RABBITMQ_PASS
 
             echo "=== Building \$STANDBY environment (v\$VERSION) ==="
-            docker compose -f "docker-compose.\${STANDBY}.yml" build --no-cache --parallel 1
+            docker compose -f "docker-compose.\${STANDBY}.yml" build --no-cache frontend-\${STANDBY}
+            docker compose -f "docker-compose.\${STANDBY}.yml" build --no-cache content-\${STANDBY}
             echo "Build complete"
           BUILD
 
