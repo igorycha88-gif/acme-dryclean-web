@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Inter, Montserrat } from "next/font/google";
+import MessengerButton from "@/components/MessengerButton";
 import "./globals.css";
 
 const inter = Inter({
@@ -138,6 +139,7 @@ export default function RootLayout({
           </div>
         </noscript>
         {children}
+        <MessengerButton />
       </body>
     </html>
   );

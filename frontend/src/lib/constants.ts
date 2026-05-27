@@ -5,6 +5,9 @@ export const CONTACTS = {
   phoneAltRaw: "+79852261573",
   whatsapp: "+79852261573",
   telegram: "@da_drycleaning",
+  telegramDirect: "https://t.me/BalovaAlena",
+  maxDirect:
+    "https://max.ru/u/f9LHodD0cOLl9VlLEQ-KMhouvsRyul_hlImvqj3X-GzUTeW3pjFv3ARaSWU",
   email: "da-drycleaning@mail.ru",
   address: "г. Москва, Ферганский проезд, 7, корп. 4, стр. 1",
   schedule: "Пн-Вс 09:00–21:00",
