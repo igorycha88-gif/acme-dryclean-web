@@ -1,0 +1,181 @@
+name: Rollback Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to rollback to (e.g. sha-abc1234, latest)"
+        required: true
+        default: "latest"
+      reason:
+        description: "Reason for rollback"
+        required: true
+        default: "Manual rollback"
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: read
+
+env:
+  REGISTRY: ghcr.io
+  FRONTEND_IMAGE: ${{ github.repository_owner }}/dryclean/frontend
+  CONTENT_IMAGE: ${{ github.repository_owner }}/dryclean/content
+
+jobs:
+  list-images:
+    name: List Available Images
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: List recent images on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: false
+          command_timeout: 30s
+          script: |
+            echo "=== Docker images on VPS ==="
+            docker images --format "table {{.Repository}}:{{.Tag}}\t{{.CreatedAt}}\t{{.Size}}" | grep -E "dryclean|REPOSITORY" | head -20
+            echo ""
+            echo "Rolling back to: ${{ github.event.inputs.image_tag }}"
+
+  rollback:
+    name: Rollback to Selected Image
+    runs-on: ubuntu-latest
+    needs: list-images
+    environment: production
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify images exist
+        timeout-minutes: 3
+        run: |
+          TAG="${{ github.event.inputs.image_tag }}"
+          FRONTEND="${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${TAG}"
+          CONTENT="${{ env.REGISTRY }}/${{ env.CONTENT_IMAGE }}:${TAG}"
+          echo "Verifying rollback images..."
+          docker pull "$FRONTEND" --quiet || { echo "::error::Frontend image not found: $FRONTEND"; exit 1; }
+          docker pull "$CONTENT" --quiet || { echo "::error::Content image not found: $CONTENT"; exit 1; }
+          echo "Images verified"
+
+      - name: Rollback via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        timeout-minutes: 15
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true
+          command_timeout: 15m
+          script: |
+            set -euo pipefail
+
+            export GITHUB_REPOSITORY="${{ github.repository }}"
+            export GHCR_REGISTRY="${{ env.REGISTRY }}"
+            export GHCR_REPO="${{ github.repository }}"
+
+            APP_DIR="/opt/app"
+            IMAGE_TAG="${{ github.event.inputs.image_tag }}"
+            ROLLBACK_REASON="${{ github.event.inputs.reason }}"
+
+            cd "$APP_DIR"
+
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin 2>/dev/null || true
+
+            if [ -f scripts/rollback-vps.sh ]; then
+                bash scripts/rollback-vps.sh "$IMAGE_TAG" "$ROLLBACK_REASON"
+            else
+                echo "ERROR: scripts/rollback-vps.sh not found"
+                exit 1
+            fi
+
+      - name: Verify rollback health
+        uses: appleboy/ssh-action@v1.0.3
+        timeout-minutes: 3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true
+          command_timeout: 3m
+          script: |
+            set -euo pipefail
+
+            HEALTH=$(curl -sf --max-time 10 "http://127.0.0.1:8011/health" 2>/dev/null || echo "")
+            if echo "$HEALTH" | grep -q "ok\|healthy"; then
+                echo "Content API health: OK"
+            else
+                echo "WARNING: Content API health check failed: $HEALTH"
+            fi
+
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 "http://127.0.0.1:3000/" 2>/dev/null || echo "000")
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "301" ]; then
+                echo "Frontend: OK ($HTTP_CODE)"
+            else
+                echo "WARNING: Frontend returned $HTTP_CODE"
+            fi
+
+      - name: Notify Telegram (Rollback Success)
+        if: success()
+        uses: appleboy/ssh-action@v1.0.3
+        continue-on-error: true
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: false
+          command_timeout: 30s
+          script: |
+            source /opt/app/.env 2>/dev/null || true
+            if [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
+                MESSAGE="🔄 Откат выполнен%0AОбраз: ${{ github.event.inputs.image_tag }}%0AПричина: ${{ github.event.inputs.reason }}%0AИнициатор: ${{ github.actor }}"
+                curl -s --max-time 15 -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"chat_id\": \"${TELEGRAM_CHAT_ID}\", \"text\": \"${MESSAGE}\"}" > /dev/null 2>&1 || true
+            fi
+
+      - name: Notify Telegram (Rollback Failed)
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.3
+        continue-on-error: true
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: false
+          command_timeout: 30s
+          script: |
+            source /opt/app/.env 2>/dev/null || true
+            if [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
+                MESSAGE="🚨 Откат FAILED%0AОбраз: ${{ github.event.inputs.image_tag }}%0AИнициатор: ${{ github.actor }}%0AТребуется ручное вмешательство!"
+                curl -s --max-time 15 -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"chat_id\": \"${TELEGRAM_CHAT_ID}\", \"text\": \"${MESSAGE}\"}" > /dev/null 2>&1 || true
+            fi

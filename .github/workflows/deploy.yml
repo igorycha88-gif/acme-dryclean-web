@@ -1,408 +1,218 @@
-name: Deploy to Production (Blue-Green)
+name: CI/CD Pipeline
 
 on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
-      version:
-        description: "Version (leave empty for auto)"
+      reason:
+        description: "Reason for deployment"
         required: false
-        type: string
-      skip_tests:
-        description: "Skip CI tests"
+        default: "Manual deployment"
+      skip_deploy:
+        description: "Skip deploy (CI only)"
         required: false
         type: boolean
         default: false
-      auto_rollback:
-        description: "Auto-rollback on failure"
-        required: false
-        type: boolean
-        default: true
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
+  packages: write
 
 env:
-  DEPLOY_DIR: /opt/app
-  DOMAIN: da-dryclean.ru
+  REGISTRY: ghcr.io
+  FRONTEND_IMAGE: ${{ github.repository_owner }}/dryclean/frontend
+  CONTENT_IMAGE: ${{ github.repository_owner }}/dryclean/content
 
 jobs:
-  ci-check:
-    name: CI - Lint & Type Check
+  ci:
+    name: CI Pipeline
+    if: github.event_name != 'workflow_dispatch' || !inputs.skip_deploy
+    uses: ./.github/workflows/ci.yml
+    with:
+      run-coverage: false
+
+  docker:
+    name: Docker Build & Push
     runs-on: ubuntu-latest
-    if: ${{ !inputs.skip_tests }}
-    steps:
-      - uses: actions/checkout@v4
+    needs: ci
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    timeout-minutes: 25
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install backend dependencies
-        working-directory: backend/services/content
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt 2>/dev/null || pip install fastapi uvicorn sqlalchemy asyncpg psycopg2-binary pydantic pydantic-settings alembic
-          pip install ruff mypy
-
-      - name: Ruff lint
-        working-directory: backend/services/content
-        run: ruff check .
-
-      - name: MyPy type check
-        working-directory: backend/services/content
-        run: mypy app/ || true
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Install frontend dependencies
-        working-directory: frontend
-        run: npm ci
-
-      - name: ESLint
-        working-directory: frontend
-        run: npm run lint
-
-      - name: TypeScript check
-        working-directory: frontend
-        run: npx tsc --noEmit
-
-  calculate-version:
-    name: Calculate Version
-    runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.version.outputs.version }}
+      image_tag: ${{ steps.image.outputs.tag }}
+      short_sha: ${{ steps.image.outputs.short_sha }}
+
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Calculate version
-        id: version
+      - name: Determine image tag
+        id: image
         run: |
-          if [[ -n "${{ inputs.version }}" ]]; then
-            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
-          else
-            chmod +x scripts/version.sh
-            VERSION=$(./scripts/version.sh)
-            echo "version=$VERSION" >> $GITHUB_OUTPUT
-          fi
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "tag=sha-${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ steps.image.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_API_URL=/api
+            NEXT_PUBLIC_CONTENT_API_URL=/api/content
+
+      - name: Build and push content service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/services/content
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.CONTENT_IMAGE }}:${{ steps.image.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.CONTENT_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
     name: Deploy to VPS (Blue-Green)
-    needs: [ci-check, calculate-version]
-    if: always() && (needs.ci-check.result == 'success' || needs.ci-check.result == 'skipped')
     runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ needs.calculate-version.outputs.version }}
+    needs: docker
+    if: github.ref == 'refs/heads/main' && github.event_name == 'workflow_dispatch' && !inputs.skip_deploy
+    environment: production
+    timeout-minutes: 30
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Verify images exist
+        timeout-minutes: 3
+        run: |
+          TAG="${{ needs.docker.outputs.image_tag }}"
+          FRONTEND="${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${TAG}"
+          CONTENT="${{ env.REGISTRY }}/${{ env.CONTENT_IMAGE }}:${TAG}"
+          echo "Verifying: $FRONTEND"
+          docker pull "$FRONTEND" --quiet || { echo "::error::Frontend image not found"; exit 1; }
+          echo "Verifying: $CONTENT"
+          docker pull "$CONTENT" --quiet || { echo "::error::Content image not found"; exit 1; }
+          echo "All images verified"
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        timeout-minutes: 25
         with:
-          fetch-depth: 0
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true
+          command_timeout: 25m
+          script: |
+            set -euo pipefail
 
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
+            export GITHUB_REPOSITORY="${{ github.repository }}"
+            export GITHUB_ACTOR="${{ github.actor }}"
+            export IMAGE_TAG="${{ needs.docker.outputs.image_tag }}"
+            export GHCR_REGISTRY="${{ env.REGISTRY }}"
+            export GHCR_REPO="${{ github.repository }}"
+
+            APP_DIR="/opt/app"
+            cd "$APP_DIR"
+
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin 2>/dev/null || true
+
+            if [ -f scripts/deploy-vps.sh ]; then
+                bash scripts/deploy-vps.sh "$IMAGE_TAG" "${{ github.sha }}" "${{ inputs.reason || 'Manual deployment' }}"
+            else
+                echo "ERROR: scripts/deploy-vps.sh not found"
+                exit 1
+            fi
+
+      - name: Post-deploy smoke tests
+        uses: appleboy/ssh-action@v1.0.3
+        timeout-minutes: 5
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true
+          command_timeout: 5m
+          script: |
+            set -euo pipefail
+            PASS=0; FAIL=0
 
-      - name: Add VPS to known hosts
-        run: |
-          mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts 2>/dev/null
-
-      - name: Pre-deploy snapshot
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'SNAPSHOT'
-            echo "=== Pre-deploy snapshot ==="
-            DEPLOY_DIR="/opt/app"
-            cd "$DEPLOY_DIR" 2>/dev/null || exit 0
-
-            echo "--- Active env ---"
-            cat current_env 2>/dev/null || echo "unknown"
-
-            echo "--- Running containers ---"
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || true
-
-            echo "--- Disk usage ---"
-            df -h / | tail -1
-
-            echo "--- RAM ---"
-            free -m | head -2
-          SNAPSHOT
-
-      - name: Sync code to VPS
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << SYNC
-            set -e
-            DEPLOY_DIR="${{ env.DEPLOY_DIR }}"
-            cd "\$DEPLOY_DIR"
-
-            echo "=== Pulling latest code from main ==="
-            git fetch --all
-            git reset --hard origin/main
-
-            chmod +x scripts/*.sh
-          SYNC
-
-      - name: Determine active/standby
-        id: envs
-        run: |
-          ACTIVE=$(ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} \
-            "cat ${{ env.DEPLOY_DIR }}/current_env 2>/dev/null || echo blue" | tr -d '[:space:]')
-
-          if [[ "$ACTIVE" == "green" ]]; then
-            STANDBY="blue"
-          else
-            STANDBY="green"
-          fi
-
-          echo "active=$ACTIVE" >> $GITHUB_OUTPUT
-          echo "standby=$STANDBY" >> $GITHUB_OUTPUT
-          echo "Active: $ACTIVE → Deploying to: $STANDBY"
-
-      - name: Backup database
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << BACKUP
-            set -e
-            DEPLOY_DIR="${{ env.DEPLOY_DIR }}"
-            VERSION="${{ env.VERSION }}"
-            ACTIVE="${{ steps.envs.outputs.active }}"
-            cd "\$DEPLOY_DIR"
-
-            BACKUP_DIR="./backups"
-            mkdir -p "\$BACKUP_DIR"
-            BACKUP_FILE="\$BACKUP_DIR/db_v\${VERSION}_\$(date +%Y%m%d_%H%M%S).sql"
-
-            PG_CONTAINER="postgres-\${ACTIVE}"
-            if docker compose -f "docker-compose.\${ACTIVE}.yml" exec -T "\$PG_CONTAINER" \
-               pg_dump -U "\${POSTGRES_USER:-dryclean}" "\${POSTGRES_DB:-dryclean_content}" > "\$BACKUP_FILE" 2>/dev/null; then
-              echo "Backup created: \$BACKUP_FILE (\$(du -h \$BACKUP_FILE | cut -f1))"
-            else
-              echo "WARNING: Backup failed (service may not be running). Continuing without backup."
-              rm -f "\$BACKUP_FILE"
-            fi
-          BACKUP
-
-      - name: Build standby environment
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << BUILD
-            set -e
-            DEPLOY_DIR="${{ env.DEPLOY_DIR }}"
-            VERSION="${{ env.VERSION }}"
-            STANDBY="${{ steps.envs.outputs.standby }}"
-            cd "\$DEPLOY_DIR"
-
-            source .env 2>/dev/null || true
-            export VERSION POSTGRES_PASSWORD RABBITMQ_PASS
-
-            echo "=== Building \$STANDBY environment (v\$VERSION) ==="
-            docker compose -f "docker-compose.\${STANDBY}.yml" build --no-cache
-            echo "Build complete"
-          BUILD
-
-      - name: Start standby environment
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << START
-            set -e
-            DEPLOY_DIR="${{ env.DEPLOY_DIR }}"
-            VERSION="${{ env.VERSION }}"
-            STANDBY="${{ steps.envs.outputs.standby }}"
-            cd "\$DEPLOY_DIR"
-
-            source .env 2>/dev/null || true
-            export VERSION POSTGRES_PASSWORD RABBITMQ_PASS
-
-            echo "=== Starting \$STANDBY environment ==="
-            docker compose -f "docker-compose.\${STANDBY}.yml" up -d --force-recreate
-            echo "Started"
-          START
-
-      - name: Health-check standby
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << HEALTHCHECK
-            set -e
-            DEPLOY_DIR="${{ env.DEPLOY_DIR }}"
-            STANDBY="${{ steps.envs.outputs.standby }}"
-            cd "\$DEPLOY_DIR"
-
-            echo "=== Health-check \$STANDBY ==="
-
-            MAX_WAIT=120
-            ELAPSED=0
-            INTERVAL=10
-
-            while [ \$ELAPSED -lt \$MAX_WAIT ]; do
-              ALL_HEALTHY=true
-
-              for service in "frontend-\${STANDBY}" "content-\${STANDBY}"; do
-                STATUS=\$(docker inspect --format='{{.State.Health.Status}}' "\$service" 2>/dev/null || echo "unknown")
-                if [ "\$STATUS" != "healthy" ]; then
-                  ALL_HEALTHY=false
-                  echo "  \$service: \$STATUS"
-                  break
-                fi
-                echo "  \$service: \$STATUS"
-              done
-
-              if \$ALL_HEALTHY; then
-                echo "All services healthy!"
-                exit 0
-              fi
-
-              sleep \$INTERVAL
-              ELAPSED=\$((ELAPSED + INTERVAL))
-              echo "Waiting... (\${ELAPSED}s/\${MAX_WAIT}s)"
-            done
-
-            echo "=== ERROR: Health-check failed ==="
-            docker compose -f "docker-compose.\${STANDBY}.yml" logs --tail=50
-            exit 1
-          HEALTHCHECK
-
-      - name: Smoke tests
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << SMOKETEST
-            set -e
-            STANDBY="${{ steps.envs.outputs.standby }}"
-
-            echo "=== Smoke tests on \$STANDBY ==="
-
-            CONTENT_PORT=8011
-
-            HTTP_CODE=\$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:\${CONTENT_PORT}/health" --max-time 10 || echo "000")
-            if [ "\$HTTP_CODE" != "200" ]; then
-              echo "FAIL: Content API health returned HTTP \$HTTP_CODE"
-              exit 1
-            fi
-            echo "PASS: Content API health (HTTP 200)"
-
-            HTTP_CODE=\$(curl -s -o /dev/null -w "%{http_code}" "http://localhost:3001/" --max-time 10 2>/dev/null || \
-                         curl -s -o /dev/null -w "%{http_code}" "http://localhost:3002/" --max-time 10 2>/dev/null || echo "000")
-            if [ "\$HTTP_CODE" = "200" ] || [ "\$HTTP_CODE" = "301" ] || [ "\$HTTP_CODE" = "302" ]; then
-              echo "PASS: Frontend (HTTP \$HTTP_CODE)"
-            else
-              echo "WARN: Frontend HTTP \$HTTP_CODE"
-            fi
-          SMOKETEST
-
-      - name: Switch traffic (Nginx blue-green switch)
-        id: switch
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << SWITCH
-            set -e
-            DEPLOY_DIR="${{ env.DEPLOY_DIR }}"
-            STANDBY="${{ steps.envs.outputs.standby }}"
-            ACTIVE="${{ steps.envs.outputs.active }}"
-            cd "\$DEPLOY_DIR"
-
-            echo "=== Switching traffic from \$ACTIVE to \$STANDBY ==="
-
-            mkdir -p /etc/nginx/conf.d
-
-            echo "set \\\$active_env \"\$STANDBY\";" > /etc/nginx/conf.d/active.conf
-            echo "Wrote /etc/nginx/conf.d/active.conf:"
-            cat /etc/nginx/conf.d/active.conf
-
-            nginx -s reload 2>/dev/null || docker exec nginx nginx -s reload 2>/dev/null || {
-              echo "WARN: Nginx reload via CLI failed, restarting container..."
-              docker restart nginx 2>/dev/null || echo "WARN: Could not reload nginx"
+            test_ep() {
+              CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 10 -X "$1" "$2" 2>/dev/null || echo "000")
+              if [ "$CODE" = "$3" ]; then echo "  OK: $4 ($CODE)"; PASS=$((PASS+1));
+              else echo "  FAIL: $4 (got $CODE, expected $3)"; FAIL=$((FAIL+1)); fi
             }
 
-            sleep 2
-            echo "Traffic switched to \$STANDBY"
-          SWITCH
+            test_ep GET "http://127.0.0.1:8011/health" "200" "Content API Health"
+            test_ep GET "http://127.0.0.1:3000/" "200" "Frontend Homepage"
 
-      - name: Verify live traffic
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << VERIFY
-            set -e
-            STANDBY="${{ steps.envs.outputs.standby }}"
+            echo "Smoke: $PASS passed, $FAIL failed"
+            [ "$FAIL" -eq 0 ] || exit 1
 
-            echo "=== Verifying live traffic ==="
-
-            sleep 3
-
-            ACTIVE_ENV=\$(curl -s "http://localhost/active-env" --max-time 5 2>/dev/null || echo "")
-            echo "Active env response: \$ACTIVE_ENV"
-
-            HTTPS_CODE=\$(curl -s -o /dev/null -w "%{http_code}" "https://${{ env.DOMAIN }}/" --max-time 10 -k 2>/dev/null || echo "000")
-            echo "HTTPS check: HTTP \$HTTPS_CODE"
-
-            NGINX_HEALTH=\$(curl -s "http://localhost/nginx-health" --max-time 5 2>/dev/null || echo "")
-            echo "Nginx health: \$NGINX_HEALTH"
-          VERIFY
-
-      - name: Update version tracking
+      - name: Notify Telegram (Success)
         if: success()
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << VERSIONING
-            set -e
-            DEPLOY_DIR="${{ env.DEPLOY_DIR }}"
-            VERSION="${{ env.VERSION }}"
-            STANDBY="${{ steps.envs.outputs.standby }}"
-            cd "\$DEPLOY_DIR"
-
-            echo "\$STANDBY" > current_env
-
-            VERSIONS_FILE="./VERSIONS.md"
-            if [ ! -f "\$VERSIONS_FILE" ]; then
-              cat > "\$VERSIONS_FILE" << 'VEOF'
-          # VERSIONS - Deploy Log
-
-          | Version | Date | Env | Author | Status |
-          |---------|------|-----|--------|--------|
-          VEOF
+        uses: appleboy/ssh-action@v1.0.3
+        continue-on-error: true
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: false
+          command_timeout: 30s
+          script: |
+            source /opt/app/.env 2>/dev/null || true
+            if [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
+              MESSAGE="✅ Деплой успешен%0AВерсия: ${{ needs.docker.outputs.short_sha }}%0AИнициатор: ${{ github.actor }}"
+              curl -s --max-time 15 -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+                -H "Content-Type: application/json" \
+                -d "{\"chat_id\": \"${TELEGRAM_CHAT_ID}\", \"text\": \"${MESSAGE}\"}" > /dev/null 2>&1 || true
             fi
 
-            DEPLOY_DATE=\$(date -u +%Y-%m-%d)
-            echo "| v\${VERSION} | \${DEPLOY_DATE} | \${STANDBY} | github-ci | DEPLOYED |" >> "\$VERSIONS_FILE"
-            echo "Version tracking updated"
-          VERSIONING
-
-      - name: Create git tag
-        if: success()
-        run: |
-          git tag -a "v${{ env.VERSION }}" -m "Deploy v${{ env.VERSION }} via CI/CD" || true
-          git push origin "v${{ env.VERSION }}" || true
-
-      - name: Cleanup old images
-        if: always()
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << CLEANUP
-            DEPLOY_DIR="${{ env.DEPLOY_DIR }}"
-            cd "\$DEPLOY_DIR" 2>/dev/null || exit 0
-
-            chmod +x scripts/cleanup.sh 2>/dev/null || true
-            ./scripts/cleanup.sh --keep 3 2>/dev/null || echo "Cleanup skipped"
-
-            echo "=== Final container state ==="
-            docker ps --format "table {{.Names}}\t{{.Status}}" 2>/dev/null || true
-          CLEANUP
-
-      - name: Rollback on failure
-        if: failure() && inputs.auto_rollback
-        run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << ROLLBACK
-            set -e
-            DEPLOY_DIR="${{ env.DEPLOY_DIR }}"
-            ACTIVE="${{ steps.envs.outputs.active }}"
-            STANDBY="${{ steps.envs.outputs.standby }}"
-            cd "\$DEPLOY_DIR"
-
-            echo "=== AUTO-ROLLBACK: Switching back to \$ACTIVE ==="
-
-            echo "set \\\$active_env \"\$ACTIVE\";" > /etc/nginx/conf.d/active.conf
-            nginx -s reload 2>/dev/null || docker exec nginx nginx -s reload 2>/dev/null || true
-
-            echo "=== Stopping failed \$STANDBY environment ==="
-            docker compose -f "docker-compose.\${STANDBY}.yml" down 2>/dev/null || true
-
-            echo "=== Rollback complete. Active: \$ACTIVE ==="
-          ROLLBACK
+      - name: Notify Telegram (Failure)
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.3
+        continue-on-error: true
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: false
+          command_timeout: 30s
+          script: |
+            source /opt/app/.env 2>/dev/null || true
+            if [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
+              MESSAGE="❌ Деплой FAILED%0AВерсия: ${{ needs.docker.outputs.short_sha }}%0AИнициатор: ${{ github.actor }}%0AТребуется ручное вмешательство!"
+              curl -s --max-time 15 -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+                -H "Content-Type: application/json" \
+                -d "{\"chat_id\": \"${TELEGRAM_CHAT_ID}\", \"text\": \"${MESSAGE}\"}" > /dev/null 2>&1 || true
+            fi
 
       - name: Deploy summary
         if: always()
@@ -411,9 +221,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Version | v${{ env.VERSION }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Active | ${{ steps.envs.outputs.active }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Deployed to | ${{ steps.envs.outputs.standby }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| CI skipped | ${{ inputs.skip_tests }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Auto-rollback | ${{ inputs.auto_rollback }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Image Tag | ${{ needs.docker.outputs.image_tag }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ needs.docker.outputs.short_sha }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Status | ${{ job.status }} |" >> $GITHUB_STEP_SUMMARY
