@@ -459,5 +459,77 @@ docker image prune -f
 
 ---
 
+## Production Deploy на VPS (Этап 5 — по триггеру «деплой на прод»)
+
+**ЗАПУСКАЕТСЯ КОГДА** пользователь пишет: «деплой на прод», «задеплой на прод», «деплой на VPS», «запусти на проде», «production deploy» и т.д.
+
+### Предусловия (проверяются ДО деплоя)
+
+1. Был GO от Тестировщика (текущая или предыдущая сессия)
+2. Локальный деплой OK (все сервисы healthy)
+3. Нет несохранённых изменений (или пользователь подтвердил)
+4. .env.production существует и содержит все переменные
+
+### Шаги Production Deploy
+
+| Шаг | Описание | Команда / Действие |
+|-----|----------|---------------------|
+| PROD-PREP-001 | Проверить SSH доступ к VPS | `ssh user@vps "echo OK"` |
+| PROD-PREP-002 | Проверить свободное место на VPS (> 5GB) | `ssh user@vps "df -h"` |
+| PROD-PREP-003 | Проверить Docker на VPS | `ssh user@vps "docker --version && docker compose version"` |
+| PROD-PREP-004 | Проверить .env.production | Все переменные присутствуют |
+| PROD-BUILD-001 | Собрать production-образы | `docker compose -f docker-compose.yml build --no-cache` |
+| PROD-TRANSFER-001 | Перенести образы на VPS | Push в Registry ИЛИ rsync исходников |
+| PROD-DEPLOY-001 | Деплой на VPS | `ssh user@vps "cd /app && docker compose up -d --force-recreate"` |
+| PROD-DB-001 | Миграции БД на VPS | `ssh user@vps "cd /app && docker compose exec <svc> alembic upgrade head"` |
+| PROD-VERIFY-001 | Healthcheck всех сервисов на VPS | curl production URLs |
+| PROD-VERIFY-002 | Проверить логи VPS | `ssh user@vps "docker compose logs --tail=50"` |
+| PROD-VERIFY-003 | Проверить SSL/HTTPS | curl -k https://domain/health |
+| PROD-REPORT-001 | Вывести итоговый отчёт | См. шаблон ниже |
+
+### Протокол отката Production
+
+При ошибке на любом этапе PROD-BUILD → PROD-VERIFY:
+
+1. **НЕ перезапускать автоматически**
+2. Вывести детальную диагностику:
+   - Какой шаг упал
+   - Полный лог ошибки
+   - Статус контейнеров на VPS: `ssh user@vps "docker compose ps"`
+   - Логи упавшего сервиса: `ssh user@vps "docker compose logs <service>"`
+3. Предложить откат:
+   ```bash
+   ssh user@vps "cd /app && docker compose down && docker compose up -d <previous-tag>"
+   ```
+4. При необходимости откатить миграции:
+   ```bash
+   ssh user@vps "cd /app && docker compose exec <service> alembic downgrade -1"
+   ```
+
+### Шаблон итогового отчёта Production Deploy
+
+```markdown
+=== ПРОДАКШН-ДЕПЛОЙ ЗАВЕРШЁН ===
+✅ VPS: [ip/domain] подключение OK
+✅ Образы собраны (production, --no-cache)
+✅ Контейнеры запущены на VPS (--force-recreate)
+✅ Миграции БД применены
+✅ Все сервисы healthy (production)
+✅ SSL/HTTPS OK
+✅ Логи без ошибок
+
+=== ИТОГИ ===
+Задача: [название бизнес-задачи]
+ЧТЗ: [ссылка]
+VPS: [ip/domain]
+Production URL: [url]
+Версия: [commit hash / tag]
+Реализовано: [список TASK-XXX]
+🎉 Продакшн-деплой завершён успешно
+```
+
+---
+
 *Скилл создан для управления инфраструктурой и деплоем микросервисной архитектуры DryClean Pro.*
 *Лучшие практики (BP-OPS-01 — BP-OPS-10) ОБЯЗАТЕЛЬНЫ к исполнению на КАЖДОМ деплое.*
+*Production Deploy (Этап 5) запускается по триггеру «деплой на прод» (см. AGENTS.md раздел 0.1).*

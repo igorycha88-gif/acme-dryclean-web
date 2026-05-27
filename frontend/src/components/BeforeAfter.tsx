@@ -4,15 +4,27 @@ import { useState, useRef, useCallback } from "react";
 import Container from "@/components/ui/Container";
 import Section from "@/components/ui/Section";
 
-const categories = ["Диваны", "Ковры", "Матрасы", "Автомобили"];
+const categories = ["Диваны", "Автомобили", "Матрасы", "Ростовые куклы"];
 
-const placeholderData: Record<string, { before: string; after: string }> = {
-  Диваны: { before: "Грязный диван (до)", after: "Чистый диван (после)" },
-  Ковры: { before: "Грязный ковёр (до)", after: "Чистый ковёр (после)" },
-  Матрасы: { before: "Грязный матрас (до)", after: "Чистый матрас (после)" },
+const beforeAfterData: Record<
+  string,
+  { before: { src?: string; text: string }; after: { src?: string; text: string } }
+> = {
+  Диваны: {
+    before: { src: "/images/before-before-sofa.jpg", text: "Грязный диван (до)" },
+    after: { src: "/images/after-sofa.jpg", text: "Чистый диван (после)" },
+  },
+  "Ростовые куклы": {
+    before: { src: "/images/before-mascot.jpg", text: "Грязная ростовая кукла (до)" },
+    after: { src: "/images/after-mascot.jpg", text: "Чистая ростовая кукла (после)" },
+  },
+  Матрасы: {
+    before: { src: "/images/before-mattress.jpg", text: "Грязный матрас (до)" },
+    after: { src: "/images/after-mattress.jpg", text: "Чистый матрас (после)" },
+  },
   Автомобили: {
-    before: "Грязный салон (до)",
-    after: "Чистый салон (после)",
+    before: { src: "/images/before-car.jpg", text: "Грязный салон (до)" },
+    after: { src: "/images/after-car.jpg", text: "Чистый салон (после)" },
   },
 };
 
@@ -51,7 +63,7 @@ export default function BeforeAfter() {
     }
   };
 
-  const current = placeholderData[activeTab];
+  const current = beforeAfterData[activeTab];
 
   return (
     <Section id="before-after">
@@ -98,14 +110,32 @@ export default function BeforeAfter() {
           onTouchEnd={handleMouseUp}
         >
           <div className="absolute inset-0 flex items-center justify-center bg-red-50 text-text-secondary">
-            {current.before}
+            {current.before.src ? (
+              <img
+                src={current.before.src}
+                alt={current.before.text}
+                className="h-full w-full object-cover"
+                draggable={false}
+              />
+            ) : (
+              current.before.text
+            )}
           </div>
 
           <div
             className="absolute inset-0 flex items-center justify-center bg-green-50 text-text-secondary"
             style={{ clipPath: `inset(0 0 0 ${sliderPos}%)` }}
           >
-            {current.after}
+            {current.after.src ? (
+              <img
+                src={current.after.src}
+                alt={current.after.text}
+                className="h-full w-full object-cover"
+                draggable={false}
+              />
+            ) : (
+              current.after.text
+            )}
           </div>
 
           <div

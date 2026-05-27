@@ -19,7 +19,7 @@ const SITE_URL = "https://da-dryclean.ru";
 export const metadata: Metadata = {
   title: "Блог о химчистке — советы по уходу за мебелью | D&A Dry Cleaning",
   description:
-    "Полезные статьи о химчистке мягкой мебели, ковров, матрасов и штор. Советы по уходу, удалению пятен и продлению срока службы. Блог D&A Dry Cleaning, Москва.",
+    "Полезные статьи о химчистке мягкой мебели, ковров, матрасов и ростовых кукол. Советы по уходу, удалению пятен и продлению срока службы. Блог D&A Dry Cleaning, Москва.",
   alternates: {
     canonical: `${SITE_URL}/blog`,
   },
@@ -75,7 +75,7 @@ export default function BlogListPage() {
             </h1>
             <p className="mt-4 text-base text-white/80 max-w-2xl sm:text-lg">
               Советы профессионалов по&nbsp;уходу за&nbsp;мягкой мебелью, коврами,
-              матрасами и&nbsp;шторами. Узнайте, как продлить срок службы
+              матрасами и&nbsp;ростовыми куклами. Узнайте, как продлить срок службы
               и&nbsp;поддерживать чистоту.
             </p>
           </Container>

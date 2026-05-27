@@ -5,6 +5,9 @@ export const CONTACTS = {
   phoneAltRaw: "+79852261573",
   whatsapp: "+79852261573",
   telegram: "@da_drycleaning",
+  telegramDirect: "https://t.me/BalovaAlena",
+  maxDirect:
+    "https://max.ru/u/f9LHodD0cOLl9VlLEQ-KMhouvsRyul_hlImvqj3X-GzUTeW3pjFv3ARaSWU",
   email: "da-drycleaning@mail.ru",
   address: "г. Москва, Ферганский проезд, 7, корп. 4, стр. 1",
   schedule: "Пн-Вс 09:00–21:00",
@@ -31,6 +34,22 @@ export const SERVICES = [
     image: "/images/services/sofa.jpg",
   },
   {
+    id: 4,
+    title: "Химчистка авто",
+    slug: "himchistka-salona-avtomobilya",
+    description:
+      "Чистка салона автомобиля: сиденья, потолок, коврики. Как из автосалона.",
+    image: "/images/services/car.jpg",
+  },
+  {
+    id: 5,
+    title: "Химчистка ростовых кукол",
+    slug: "himchistka-rostovyh-kukol",
+    description:
+      "Профессиональная чистка и дезинфекция ростовых кукол. Удаление пятен, запахов, восстановление внешнего вида.",
+    image: "/images/services/mascot.jpg",
+  },
+  {
     id: 2,
     title: "Химчистка ковров",
     slug: "himchistka-kovrov",
@@ -45,22 +64,6 @@ export const SERVICES = [
     description:
       "Дезинфекция и глубокая чистка матрасов. Удаление клещей, пятен, аллергенов.",
     image: "/images/services/mattress.jpg",
-  },
-  {
-    id: 4,
-    title: "Химчистка авто",
-    slug: "himchistka-salona-avtomobilya",
-    description:
-      "Чистка салона автомобиля: сиденья, потолок, коврики. Как из автосалона.",
-    image: "/images/services/car.jpg",
-  },
-  {
-    id: 5,
-    title: "Химчистка штор",
-    slug: "himchistka-shtor",
-    description:
-      "Бережная чистка штор и тюлей без снятия с карниза. Сохраняем форму и цвет.",
-    image: "/images/services/curtains.jpg",
   },
   {
     id: 6,

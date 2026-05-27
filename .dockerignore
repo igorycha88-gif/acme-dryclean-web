@@ -9,6 +9,8 @@ node_modules/
 
 # OS files
 .DS_Store
+._*
+*/._*
 
 # IDE
 .idea/

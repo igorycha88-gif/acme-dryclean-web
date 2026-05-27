@@ -1,6 +1,6 @@
 "use client";
 
-import { Mail, Clock, Star, Phone, MessageCircle } from "lucide-react";
+import { Mail, Clock, Phone, Send, MessageCircle } from "lucide-react";
 import Container from "@/components/ui/Container";
 import { CONTACTS } from "@/lib/constants";
 
@@ -22,25 +22,41 @@ export default function TopBar() {
           </a>
         </div>
         <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1">
-            <Star size={12} className="text-warning fill-warning" />
-            Яндекс Карты
-          </span>
+          <div className="flex items-center gap-3 md:hidden">
+            <a
+              href={`tel:${CONTACTS.phoneRaw}`}
+              className="flex items-center gap-1 hover:text-secondary transition-colors"
+            >
+              <Phone size={12} />
+              {CONTACTS.phone}
+            </a>
+            <a
+              href={`tel:${CONTACTS.phoneAltRaw}`}
+              className="flex items-center gap-1 hover:text-secondary transition-colors"
+            >
+              <Phone size={12} />
+              {CONTACTS.phoneAlt}
+            </a>
+          </div>
           <a
-            href={`tel:${CONTACTS.phoneRaw}`}
-            className="flex items-center gap-1 md:hidden hover:text-secondary transition-colors"
-          >
-            <Phone size={12} />
-            {CONTACTS.phone}
-          </a>
-          <a
-            href={`https://t.me/${CONTACTS.telegram.replace("@", "")}`}
+            href={CONTACTS.telegramDirect}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 hover:text-secondary transition-colors"
+            aria-label="Написать в Telegram"
           >
-            <MessageCircle size={12} />
+            <Send size={14} />
             <span className="max-md:hidden">Telegram</span>
+          </a>
+          <a
+            href={CONTACTS.maxDirect}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 hover:text-secondary transition-colors"
+            aria-label="Написать в МАКС"
+          >
+            <MessageCircle size={14} />
+            <span className="max-md:hidden">МАКС</span>
           </a>
         </div>
       </Container>
