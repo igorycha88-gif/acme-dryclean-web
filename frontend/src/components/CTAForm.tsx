@@ -7,7 +7,7 @@ import Section from "@/components/ui/Section";
 import Button from "@/components/ui/Button";
 import { CONTACTS, SERVICES } from "@/lib/constants";
 import { createOrder } from "@/lib/api";
-import { trackFormSubmit, trackPhoneClick } from "@/lib/tracker";
+import { trackFormSubmit } from "@/lib/tracker";
 
 export default function CTAForm() {
   const [form, setForm] = useState({ name: "", phone: "", serviceType: "" });
@@ -117,7 +117,6 @@ export default function CTAForm() {
           или позвоните:{" "}
           <a
             href={`tel:${CONTACTS.phoneRaw}`}
-            onClick={() => trackPhoneClick(CONTACTS.phoneRaw)}
             className="inline-flex items-center gap-1 text-white hover:text-secondary transition-colors"
           >
             <Phone size={14} />

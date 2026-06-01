@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Phone, Mail, MapPin, MessageCircle } from "lucide-react";
 import Container from "@/components/ui/Container";
 import { CONTACTS } from "@/lib/constants";
-import { trackPhoneClick, trackMessengerClick } from "@/lib/tracker";
+import { trackMessengerClick } from "@/lib/tracker";
 
 const serviceLinks = [
   { label: "Химчистка диванов", href: "/uslugi/himchistka-divanov" },
@@ -88,7 +88,6 @@ export default function Footer() {
               <li>
                 <a
                   href={`tel:${CONTACTS.phoneRaw}`}
-                  onClick={() => trackPhoneClick(CONTACTS.phoneRaw)}
                   className="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
                 >
                   <Phone size={14} />
@@ -98,7 +97,6 @@ export default function Footer() {
               <li>
                 <a
                   href={`tel:${CONTACTS.phoneAltRaw}`}
-                  onClick={() => trackPhoneClick(CONTACTS.phoneAltRaw)}
                   className="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors"
                 >
                   <Phone size={14} />
