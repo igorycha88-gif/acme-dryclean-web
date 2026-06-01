@@ -1,5 +1,5 @@
 const TRACKING_API =
-  process.env.NEXT_PUBLIC_TRACKING_API_URL || "http://localhost:8020";
+  process.env.NEXT_PUBLIC_TRACKING_API_URL || "";
 
 const VISITOR_KEY = "da_tracker_visitor_id";
 const SESSION_KEY = "da_tracker_session_id";

@@ -4,6 +4,9 @@ set -euo pipefail
 APP_DIR="/opt/app"
 CONTENT_PORT=8011
 FRONTEND_PORT=3000
+TRACKING_PORT=8020
+PROMETHEUS_PORT=9090
+GRAFANA_PORT=3030
 GREEN_CONTENT_PORT=8012
 GREEN_FRONTEND_PORT=3001
 LOG_DIR="/var/log/dryclean-deploy"
@@ -23,6 +26,7 @@ GHCR_REGISTRY="${GHCR_REGISTRY:-ghcr.io}"
 GHCR_REPO="${GHCR_REPO:-}"
 FRONTEND_IMAGE="${GHCR_REGISTRY}/${GHCR_REPO,,}/dryclean/frontend:${IMAGE_TAG}"
 CONTENT_IMAGE="${GHCR_REGISTRY}/${GHCR_REPO,,}/dryclean/content:${IMAGE_TAG}"
+TRACKING_IMAGE="${GHCR_REGISTRY}/${GHCR_REPO,,}/dryclean/tracking:${IMAGE_TAG}"
 
 wait_for_health() {
     local port="$1"
@@ -57,6 +61,7 @@ log "============================================"
 log "Image tag: $IMAGE_TAG"
 log "Frontend: $FRONTEND_IMAGE"
 log "Content:  $CONTENT_IMAGE"
+log "Tracking: $TRACKING_IMAGE"
 log "Commit: $COMMIT_SHA"
 log "Reason: $DEPLOY_REASON"
 log "Initiator: ${GITHUB_ACTOR:-manual}"
@@ -137,6 +142,9 @@ docker pull "$FRONTEND_IMAGE" 2>&1 | tail -3 || fatal "Failed to pull frontend i
 log "  Pulling: $CONTENT_IMAGE"
 docker pull "$CONTENT_IMAGE" 2>&1 | tail -3 || fatal "Failed to pull content image"
 
+log "  Pulling: $TRACKING_IMAGE"
+docker pull "$TRACKING_IMAGE" 2>&1 | tail -3 || log "  WARN: Tracking image not found in registry, will skip tracking deployment"
+
 PULL_TIME=$(( $(date +%s) - PULL_START ))
 log "  Images ready in ${PULL_TIME}s"
 
@@ -149,6 +157,7 @@ deploy_direct() {
     docker rm -f dryclean-content 2>/dev/null || true
     docker rm -f dryclean-postgres 2>/dev/null || true
     docker rm -f dryclean-redis 2>/dev/null || true
+    docker rm -f dryclean-tracking 2>/dev/null || true
     docker network create dryclean-net 2>/dev/null || true
 
     docker run -d \
@@ -186,6 +195,27 @@ deploy_direct() {
         fatal "Content service failed health check"
     fi
 
+    log "  Starting tracking service on port ${TRACKING_PORT}..."
+    docker run -d \
+        --name dryclean-tracking \
+        --network dryclean-net \
+        --network-alias tracking-blue \
+        --restart unless-stopped \
+        -e TRACKING_DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
+        -e TRACKING_DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
+        -e TRACKING_CORS_ORIGINS='["https://da-dryclean.ru"]' \
+        -e TRACKING_DEBUG=false \
+        -p ${TRACKING_PORT}:8020 \
+        "$TRACKING_IMAGE"
+
+    if ! wait_for_health "$TRACKING_PORT" "dryclean-tracking" 60 "/health"; then
+        log "  WARN: Tracking service health check timeout (non-fatal)"
+        sleep 3
+    fi
+
+    log "  Running tracking database migrations..."
+    docker exec dryclean-tracking alembic upgrade head 2>&1 | tee -a "$DEPLOY_LOG" || log "  WARN: Tracking migration failed (tables may already exist)"
+
     docker run -d \
         --name dryclean-frontend \
         --network dryclean-net \
@@ -206,6 +236,7 @@ deploy_blue_green() {
 
     docker rm -f dryclean-frontend-green 2>/dev/null || true
     docker rm -f dryclean-content-green 2>/dev/null || true
+    docker rm -f dryclean-tracking-green 2>/dev/null || true
 
     log "  Starting GREEN content on port ${GREEN_CONTENT_PORT}..."
     docker run -d \
@@ -252,6 +283,8 @@ EOF
     docker rm dryclean-frontend 2>/dev/null || true
     docker stop dryclean-content 2>/dev/null || true
     docker rm dryclean-content 2>/dev/null || true
+    docker stop dryclean-tracking 2>/dev/null || true
+    docker rm dryclean-tracking 2>/dev/null || true
 
     log "  Starting production containers on BLUE ports..."
     docker run -d \
@@ -270,6 +303,27 @@ EOF
         docker rm -f dryclean-content 2>/dev/null || true
         fatal "New container failed — GREEN still serving"
     fi
+
+    log "  Starting production tracking on port ${TRACKING_PORT}..."
+    docker run -d \
+        --name dryclean-tracking \
+        --network dryclean-net \
+        --network-alias tracking-blue \
+        --restart unless-stopped \
+        -e TRACKING_DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
+        -e TRACKING_DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
+        -e TRACKING_CORS_ORIGINS='["https://da-dryclean.ru"]' \
+        -e TRACKING_DEBUG=false \
+        -p ${TRACKING_PORT}:8020 \
+        "$TRACKING_IMAGE"
+
+    if ! wait_for_health "$TRACKING_PORT" "dryclean-tracking" 60 "/health"; then
+        log "  WARN: Tracking service health check timeout (non-fatal)"
+        sleep 3
+    fi
+
+    log "  Running tracking database migrations..."
+    docker exec dryclean-tracking alembic upgrade head 2>&1 | tee -a "$DEPLOY_LOG" || log "  WARN: Tracking migration failed"
 
     docker run -d \
         --name dryclean-frontend \
@@ -292,6 +346,7 @@ EOF
 
     docker rm -f dryclean-frontend-green 2>/dev/null || true
     docker rm -f dryclean-content-green 2>/dev/null || true
+    docker rm -f dryclean-tracking-green 2>/dev/null || true
     log "  GREEN containers removed"
 }
 
@@ -305,6 +360,145 @@ else
     deploy_direct
 fi
 
+# ── Step 5.5: Monitoring setup (Prometheus + Grafana) ──────────────────────────
+
+setup_monitoring() {
+    log "── Monitoring Setup (Prometheus + Grafana) ──"
+
+    MONITORING_DIR="$APP_DIR/monitoring"
+    mkdir -p "$MONITORING_DIR/grafana/provisioning/datasources"
+    mkdir -p "$MONITORING_DIR/grafana/provisioning/dashboards"
+    mkdir -p "$MONITORING_DIR/grafana/dashboards"
+
+    if [ ! -f "$MONITORING_DIR/prometheus.yml" ]; then
+        log "  Creating production Prometheus config..."
+        cat > "$MONITORING_DIR/prometheus.yml" <<'PROMEOF'
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "tracking"
+    static_configs:
+      - targets: ["dryclean-tracking:8020"]
+    metrics_path: /metrics
+
+  - job_name: "content"
+    static_configs:
+      - targets: ["dryclean-content:8011"]
+    metrics_path: /metrics
+
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+PROMEOF
+    fi
+
+    if [ ! -f "$MONITORING_DIR/grafana/provisioning/datasources/datasources.yml" ]; then
+        log "  Creating production Grafana datasources..."
+        cat > "$MONITORING_DIR/grafana/provisioning/datasources/datasources.yml" <<DSEOF
+apiVersion: 1
+
+datasources:
+  - name: PostgreSQL
+    uid: PostgreSQL
+    type: postgres
+    access: proxy
+    url: dryclean-postgres:5432
+    user: ${POSTGRES_USER:-dryclean}
+    secureJsonData:
+      password: ${POSTGRES_PASSWORD}
+    jsonData:
+      database: ${POSTGRES_DB:-dryclean_content}
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: false
+    isDefault: false
+
+  - name: Prometheus
+    uid: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://dryclean-prometheus:9090
+    isDefault: true
+DSEOF
+    fi
+
+    if [ ! -f "$MONITORING_DIR/grafana/provisioning/dashboards/dashboard_provider.yml" ]; then
+        cat > "$MONITORING_DIR/grafana/provisioning/dashboards/dashboard_provider.yml" <<'DPEOF'
+apiVersion: 1
+
+providers:
+  - name: "Business Analytics"
+    orgId: 1
+    folder: ""
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: false
+DPEOF
+    fi
+
+    if [ -f "$APP_DIR/monitoring/grafana/dashboards/business_analytics.json" ]; then
+        log "  Dashboard config already present"
+    else
+        log "  WARN: No Grafana dashboard JSON found at $MONITORING_DIR/grafana/dashboards/"
+        log "  You can manually copy it from the repo later"
+    fi
+
+    docker rm -f dryclean-prometheus 2>/dev/null || true
+    docker rm -f dryclean-grafana 2>/dev/null || true
+
+    log "  Starting Prometheus on port ${PROMETHEUS_PORT}..."
+    docker run -d \
+        --name dryclean-prometheus \
+        --network dryclean-net \
+        --restart unless-stopped \
+        -p ${PROMETHEUS_PORT}:9090 \
+        -v "$MONITORING_DIR/prometheus.yml:/etc/prometheus/prometheus.yml:ro" \
+        -v dryclean_prometheus:/prometheus \
+        prom/prometheus:v2.53.0 \
+        --config.file=/etc/prometheus/prometheus.yml \
+        --storage.tsdb.path=/prometheus \
+        --storage.tsdb.retention.time=15d
+
+    sleep 5
+
+    if curl -sf --max-time 5 "http://127.0.0.1:${PROMETHEUS_PORT}/-/healthy" >/dev/null 2>&1; then
+        log "  Prometheus is healthy"
+    else
+        log "  WARN: Prometheus health check failed"
+    fi
+
+    GRAFANA_ADMIN_PASSWORD="${GRAFANA_ADMIN_PASSWORD:-dryclean2026}"
+
+    log "  Starting Grafana on port ${GRAFANA_PORT}..."
+    docker run -d \
+        --name dryclean-grafana \
+        --network dryclean-net \
+        --restart unless-stopped \
+        -e GF_SECURITY_ADMIN_USER=admin \
+        -e "GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}" \
+        -e GF_AUTH_ANONYMOUS_ENABLED=false \
+        -v dryclean_grafana:/var/lib/grafana \
+        -v "$MONITORING_DIR/grafana/provisioning:/etc/grafana/provisioning:ro" \
+        -v "$MONITORING_DIR/grafana/dashboards:/var/lib/grafana/dashboards:ro" \
+        -p ${GRAFANA_PORT}:3000 \
+        grafana/grafana:11.1.0
+
+    if ! wait_for_health "$GRAFANA_PORT" "dryclean-grafana" 60 "/api/health"; then
+        log "  WARN: Grafana health check timeout"
+        sleep 3
+    else
+        log "  Grafana is healthy (admin panel at http://<VPS_IP>:${GRAFANA_PORT})"
+    fi
+}
+
+setup_monitoring
+
 # ── Step 6: Smoke tests ─────────────────────────────────────────────────────
 
 log "── Step 6: Smoke tests ──"
@@ -313,6 +507,9 @@ SMOKE_FAIL=0
 endpoints=(
     "GET|200|${CONTENT_PORT}|/health|Content API Health"
     "GET|200|${FRONTEND_PORT}|/|Frontend Homepage"
+    "GET|200|${TRACKING_PORT}|/health|Tracking Service Health"
+    "GET|200|${PROMETHEUS_PORT}|/-/healthy|Prometheus Health"
+    "GET|200|${GRAFANA_PORT}|/api/health|Grafana Health"
 )
 
 for ep in "${endpoints[@]}"; do
@@ -387,6 +584,7 @@ log "============================================"
 log "Time: ${DEPLOY_TIME}s"
 log "Frontend: $FRONTEND_IMAGE"
 log "Content:  $CONTENT_IMAGE"
+log "Tracking: $TRACKING_IMAGE"
 log "Commit: $COMMIT_SHA"
 
 docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep dryclean || true

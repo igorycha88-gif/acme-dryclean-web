@@ -29,6 +29,7 @@ env:
   REGISTRY: ghcr.io
   FRONTEND_IMAGE: ${{ github.repository_owner }}/dryclean/frontend
   CONTENT_IMAGE: ${{ github.repository_owner }}/dryclean/content
+  TRACKING_IMAGE: ${{ github.repository_owner }}/dryclean/tracking
 
 jobs:
   ci:
@@ -82,6 +83,7 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_URL=/api
             NEXT_PUBLIC_CONTENT_API_URL=/api/content
+            NEXT_PUBLIC_TRACKING_API_URL=
 
       - name: Build and push content service
         uses: docker/build-push-action@v5
@@ -91,6 +93,17 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.CONTENT_IMAGE }}:${{ steps.image.outputs.tag }}
             ${{ env.REGISTRY }}/${{ env.CONTENT_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push tracking service
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend/services/tracking
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.TRACKING_IMAGE }}:${{ steps.image.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.TRACKING_IMAGE }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -111,10 +124,13 @@ jobs:
           TAG="${{ needs.docker.outputs.image_tag }}"
           FRONTEND="${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${TAG}"
           CONTENT="${{ env.REGISTRY }}/${{ env.CONTENT_IMAGE }}:${TAG}"
+          TRACKING="${{ env.REGISTRY }}/${{ env.TRACKING_IMAGE }}:${TAG}"
           echo "Verifying: $FRONTEND"
           docker pull "$FRONTEND" --quiet || { echo "::error::Frontend image not found"; exit 1; }
           echo "Verifying: $CONTENT"
           docker pull "$CONTENT" --quiet || { echo "::error::Content image not found"; exit 1; }
+          echo "Verifying: $TRACKING"
+          docker pull "$TRACKING" --quiet || { echo "::warning::Tracking image not found"; }
           echo "All images verified"
 
       - name: Deploy via SSH
@@ -170,6 +186,9 @@ jobs:
 
             test_ep GET "http://127.0.0.1:8011/health" "200" "Content API Health"
             test_ep GET "http://127.0.0.1:3000/" "200" "Frontend Homepage"
+            test_ep GET "http://127.0.0.1:8020/health" "200" "Tracking Service Health"
+            test_ep GET "http://127.0.0.1:9090/-/healthy" "200" "Prometheus Health"
+            test_ep GET "http://127.0.0.1:3030/api/health" "200" "Grafana Health"
 
             echo "Smoke: $PASS passed, $FAIL failed"
             [ "$FAIL" -eq 0 ] || exit 1

@@ -106,6 +106,34 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  tracking-green:
+    build:
+      context: ./backend/services/tracking
+      dockerfile: Dockerfile
+    image: dryclean/tracking:${VERSION:-latest}
+    container_name: tracking-green
+    expose:
+      - "8020"
+    environment:
+      - TRACKING_DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@postgres-green:5432/${POSTGRES_DB:-dryclean_content}
+      - TRACKING_DATABASE_URL_SYNC=postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@postgres-green:5432/${POSTGRES_DB:-dryclean_content}
+      - TRACKING_CORS_ORIGINS=["https://da-dryclean.ru"]
+      - TRACKING_DEBUG=false
+    depends_on:
+      postgres-green:
+        condition: service_healthy
+    labels:
+      - "deploy.env=green"
+      - "deploy.version=${VERSION:-latest}"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8020/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   postgres_green_data:
   content_green_uploads:
