@@ -158,17 +158,24 @@ deploy_direct() {
         dryclean-frontend-green dryclean-content-green dryclean-tracking-green \
         2>/dev/null || true
 
+    log "  Cleaning up all containers on deploy ports..."
     for port in ${FRONTEND_PORT} ${CONTENT_PORT} ${TRACKING_PORT} ${PROMETHEUS_PORT} ${GRAFANA_PORT}; do
-        docker ps --format '{{.ID}} {{.Ports}}' | while read -r cid ports; do
-            if echo "$ports" | grep -qE "[:.]${port}->"; then
-                cname=$(docker inspect --format '{{.Name}}' "$cid" 2>/dev/null | sed 's/\///')
-                log "  Force-removing container '${cname:-$cid}' occupying port ${port}"
-                docker rm -f "$cid" 2>/dev/null || true
-            fi
+        for cid in $(docker ps -q --filter "publish=${port}" 2>/dev/null); do
+            cname=$(docker inspect --format '{{.Name}}' "$cid" 2>/dev/null | sed 's/^\///') || cname="$cid"
+            log "  Force-removing container '${cname}' (id=${cid}) on port ${port}"
+            docker rm -f "$cid" 2>/dev/null || true
         done
     done
 
-    sleep 2
+    sleep 3
+
+    for port in ${CONTENT_PORT} ${FRONTEND_PORT} ${TRACKING_PORT}; do
+        if docker ps --format '{{.Ports}}' | grep -q ":${port}->" 2>/dev/null; then
+            log "  WARN: Port ${port} still allocated after cleanup!"
+            docker ps --format '{{.ID}}\t{{.Names}}\t{{.Ports}}' 2>/dev/null | tee -a "$DEPLOY_LOG"
+        fi
+    done
+
     docker network create dryclean-net 2>/dev/null || true
 
     docker run -d \
