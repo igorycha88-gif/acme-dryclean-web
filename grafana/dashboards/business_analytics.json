@@ -1,0 +1,331 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "title": "D&A Dry Cleaning — Бизнес-аналитика",
+  "description": "Дашборд бизнес-метрик сайта: посетители, клики, заявки, конверсия",
+  "tags": ["business", "tracking", "dryclean"],
+  "timezone": "Europe/Moscow",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 1,
+      "title": "Посетители",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT COUNT(DISTINCT session_id) AS value FROM analytics_events WHERE created_at >= NOW() - INTERVAL '24 hours'",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "fixed", "fixedColor": "blue" },
+          "thresholds": { "mode": "absolute", "steps": [{"value": null, "color": "blue"}] }
+        }
+      },
+      "description": "Уникальные сессии за 24 часа"
+    },
+    {
+      "id": 2,
+      "title": "Просмотры страниц",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT COUNT(*) AS value FROM analytics_events WHERE event_type='page_view' AND created_at >= NOW() - INTERVAL '24 hours'",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "fixed", "fixedColor": "green" }
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Заявки",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 6, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT COUNT(*) AS value FROM analytics_events WHERE event_type='form_submit' AND payload->>'success' = 'true' AND created_at >= NOW() - INTERVAL '24 hours'",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "fixed", "fixedColor": "orange" }
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Конверсия",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 0 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT ROUND(100.0 * (SELECT COUNT(*) FROM analytics_events WHERE event_type='form_submit' AND payload->>'success' = 'true' AND created_at >= NOW() - INTERVAL '24 hours') / NULLIF((SELECT COUNT(DISTINCT session_id) FROM analytics_events WHERE created_at >= NOW() - INTERVAL '24 hours'), 0), 1) AS value",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{"value": null, "color": "red"}, {"value": 5, "color": "orange"}, {"value": 15, "color": "green"}] }
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Клики по услугам",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 4 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT payload->>'service_name' AS service, COUNT(*) AS clicks FROM analytics_events WHERE event_type='service_click' AND created_at >= NOW() - INTERVAL '24 hours' GROUP BY payload->>'service_name' ORDER BY clicks DESC",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "palette-classic" }
+        }
+      },
+      "description": "Количество кликов по каждой услуге"
+    },
+    {
+      "id": 6,
+      "title": "Клики по телефонам",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 3, "x": 6, "y": 4 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT payload->>'phone' AS phone, COUNT(*) AS clicks FROM analytics_events WHERE event_type='phone_click' AND created_at >= NOW() - INTERVAL '24 hours' GROUP BY payload->>'phone' ORDER BY clicks DESC",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Клики в мессенджеры",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 4 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT payload->>'messenger' AS messenger, COUNT(*) AS clicks FROM analytics_events WHERE event_type='messenger_click' AND created_at >= NOW() - INTERVAL '24 hours' GROUP BY payload->>'messenger' ORDER BY clicks DESC",
+        "refId": "A"
+      }],
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": { "values": true, "calcs": ["sum"] },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{"value": null, "color": "purple"}] }
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Посетители по часам",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 12 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "time_series",
+        "rawSql": "SELECT DATE_TRUNC('hour', created_at) AS time, COUNT(DISTINCT session_id) AS visitors FROM analytics_events WHERE event_type='page_view' AND created_at >= NOW() - INTERVAL '24 hours' GROUP BY time ORDER BY time",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineInterpolation": "smooth", "fillOpacity": 30 }
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Источники трафика",
+      "type": "piechart",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 12 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT referrer_group AS source, COUNT(*) AS visitors FROM analytics_sessions WHERE started_at >= NOW() - INTERVAL '24 hours' GROUP BY referrer_group ORDER BY visitors DESC",
+        "refId": "A"
+      }],
+      "options": {
+        "pieType": "pie",
+        "displayLabels": ["name", "percent", "value"],
+        "legend": { "displayMode": "table", "placement": "right" }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Топ городов",
+      "type": "table",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 18 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT geo_city AS city, COUNT(DISTINCT visitor_id) AS visitors FROM analytics_sessions WHERE started_at >= NOW() - INTERVAL '24 hours' AND geo_city IS NOT NULL GROUP BY geo_city ORDER BY visitors DESC LIMIT 10",
+        "refId": "A"
+      }],
+      "options": { "footer": { "show": false } }
+    },
+    {
+      "id": 11,
+      "title": "Динамика заявок (7 дней)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 18 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "time_series",
+        "rawSql": "SELECT DATE_TRUNC('day', created_at) AS time, COUNT(*) AS submits FROM analytics_events WHERE event_type='form_submit' AND payload->>'success' = 'true' AND created_at >= NOW() - INTERVAL '7 days' GROUP BY time ORDER BY time",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineInterpolation": "smooth", "fillOpacity": 30 }
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "Bounce Rate",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 8 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT ROUND(100.0 * SUM(CASE WHEN page_views_count <= 1 THEN 1 ELSE 0 END) / NULLIF(COUNT(*), 0), 1) AS value FROM analytics_sessions WHERE started_at >= NOW() - INTERVAL '24 hours'",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{"value": null, "color": "green"}, {"value": 40, "color": "orange"}, {"value": 60, "color": "red"}] }
+        }
+      }
+    },
+    {
+      "id": 13,
+      "title": "События/сек (live)",
+      "type": "timeseries",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [{
+        "expr": "rate(tracking_events_total[1m])",
+        "legendFormat": "{{event_type}}",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "eps",
+          "color": { "mode": "palette-classic" },
+          "custom": { "lineInterpolation": "smooth", "fillOpacity": 20 }
+        }
+      }
+    },
+    {
+      "id": 14,
+      "title": "Здоровье сервиса",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 24 },
+      "datasource": { "type": "prometheus", "uid": "Prometheus" },
+      "targets": [{
+        "expr": "up{job='tracking'}",
+        "legendFormat": "Tracking Service",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{"value": null, "color": "red"}, {"value": 1, "color": "green"}] }
+        }
+      }
+    },
+    {
+      "id": 15,
+      "title": "Популярные страницы",
+      "type": "table",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 28 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT page_url AS url, COUNT(*) AS views FROM analytics_events WHERE event_type='page_view' AND created_at >= NOW() - INTERVAL '24 hours' GROUP BY page_url ORDER BY views DESC LIMIT 10",
+        "refId": "A"
+      }],
+      "options": { "footer": { "show": false } }
+    },
+    {
+      "id": 16,
+      "title": "Источники заявок (Hero vs CTA)",
+      "type": "barchart",
+      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 28 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT payload->>'form_location' AS location, COUNT(*) AS submits FROM analytics_events WHERE event_type='form_submit' AND payload->>'success' = 'true' AND created_at >= NOW() - INTERVAL '7 days' GROUP BY payload->>'form_location' ORDER BY submits DESC",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "palette-classic" }
+        }
+      }
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "period",
+        "type": "interval",
+        "label": "Период",
+        "query": "24h,7d,30d",
+        "current": { "text": "24h", "value": "24h" },
+        "refresh": 1
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"],
+    "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
+  }
+}

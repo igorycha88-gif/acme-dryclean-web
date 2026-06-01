@@ -3,6 +3,7 @@
 import { Mail, Clock, Phone, Send, MessageCircle } from "lucide-react";
 import Container from "@/components/ui/Container";
 import { CONTACTS } from "@/lib/constants";
+import { trackPhoneClick, trackMessengerClick } from "@/lib/tracker";
 
 export default function TopBar() {
   return (
@@ -23,25 +24,28 @@ export default function TopBar() {
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-3 md:hidden">
-            <a
-              href={`tel:${CONTACTS.phoneRaw}`}
-              className="flex items-center gap-1 hover:text-secondary transition-colors"
-            >
-              <Phone size={12} />
-              {CONTACTS.phone}
-            </a>
-            <a
-              href={`tel:${CONTACTS.phoneAltRaw}`}
-              className="flex items-center gap-1 hover:text-secondary transition-colors"
-            >
-              <Phone size={12} />
-              {CONTACTS.phoneAlt}
-            </a>
+          <a
+            href={`tel:${CONTACTS.phoneRaw}`}
+            onClick={() => trackPhoneClick(CONTACTS.phoneRaw)}
+            className="flex items-center gap-1 hover:text-secondary transition-colors"
+          >
+            <Phone size={12} />
+            {CONTACTS.phone}
+          </a>
+          <a
+            href={`tel:${CONTACTS.phoneAltRaw}`}
+            onClick={() => trackPhoneClick(CONTACTS.phoneAltRaw)}
+            className="flex items-center gap-1 hover:text-secondary transition-colors"
+          >
+            <Phone size={12} />
+            {CONTACTS.phoneAlt}
+          </a>
           </div>
           <a
             href={CONTACTS.telegramDirect}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackMessengerClick("telegram")}
             className="flex items-center gap-1 hover:text-secondary transition-colors"
             aria-label="Написать в Telegram"
           >
@@ -52,6 +56,7 @@ export default function TopBar() {
             href={CONTACTS.maxDirect}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => trackMessengerClick("max")}
             className="flex items-center gap-1 hover:text-secondary transition-colors"
             aria-label="Написать в МАКС"
           >

@@ -7,6 +7,7 @@ import Section from "@/components/ui/Section";
 import Button from "@/components/ui/Button";
 import { CONTACTS, SERVICES } from "@/lib/constants";
 import { createOrder } from "@/lib/api";
+import { trackFormSubmit, trackPhoneClick } from "@/lib/tracker";
 
 export default function CTAForm() {
   const [form, setForm] = useState({ name: "", phone: "", serviceType: "" });
@@ -22,6 +23,7 @@ export default function CTAForm() {
         service_type: form.serviceType,
       });
       if (result) {
+        trackFormSubmit("cta", form.serviceType || undefined, true);
         setStatus("sent");
       } else {
         const res = await fetch("/api/orders", {
@@ -34,10 +36,12 @@ export default function CTAForm() {
           }),
         });
         if (!res.ok) throw new Error();
+        trackFormSubmit("cta", form.serviceType || undefined, true);
         setStatus("sent");
       }
       setForm({ name: "", phone: "", serviceType: "" });
     } catch {
+      trackFormSubmit("cta", form.serviceType || undefined, false);
       setStatus("error");
     }
   };
@@ -113,6 +117,7 @@ export default function CTAForm() {
           или позвоните:{" "}
           <a
             href={`tel:${CONTACTS.phoneRaw}`}
+            onClick={() => trackPhoneClick(CONTACTS.phoneRaw)}
             className="inline-flex items-center gap-1 text-white hover:text-secondary transition-colors"
           >
             <Phone size={14} />

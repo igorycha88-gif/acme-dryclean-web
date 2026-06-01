@@ -206,6 +206,16 @@ READY → DELIVERY_SCHEDULED → DELIVERING → DELIVERED → COMPLETED
 
 **БД**: `reviews_db` — таблицы: `reviews`, `review_responses`
 
+#### 3.2.12 Tracking Service (`:8020`) — Аналитика поведения
+- Приём событий с фронтенда (просмотры, клики, заявки)
+- Prometheus metrics endpoint
+- GeoIP определение города
+- Агрегация бизнес-показателей
+- **Не требует аутентификации** (публичный endpoint)
+- Rate limiting: 100 req/sec/IP
+
+**БД**: `dryclean_content` (существующая) — таблицы: `analytics_events`, `analytics_sessions`
+
 ---
 
 ## 4. Паттерны проектирования
@@ -439,20 +449,40 @@ service-name/
 
 ## 9. Мониторинг и наблюдаемость
 
-### 9.1 Метрики (Prometheus)
+### 9.1 Системные метрики (Prometheus + Grafana)
 - RPS на сервис
 - Latency (p50, p95, p99)
 - Error rate
 - Active orders
 - Queue depth (RabbitMQ)
 - DB connections
+- Event count по типам (Tracking Service)
+- Event latency (Tracking Service)
 
-### 9.2 Логи (Loki + Grafana)
+Prometheus scraping interval: 15 секунд. Retention: 15 дней.
+
+### 9.2 Бизнес-дашборд (Grafana + PostgreSQL)
+- **Tracking Service** собирает события с фронтенда и сохраняет в `analytics_events`
+- **Grafana** читает данные напрямую из PostgreSQL через SQL-запросы
+- **Prometheus** предоставляет live-метрики (event rate, error rate)
+
+**Панели дашборда:**
+- Посетители (24ч, 7д, 30д)
+- Клики по услугам (6 типов)
+- Клики по телефонам (2 номера)
+- Клики в мессенджеры (Telegram, МАКС)
+- Заявки с форм и конверсия
+- Источники трафика
+- География посетителей
+- Почасовая активность
+- Bounce rate
+
+### 9.3 Логи (Loki + Grafana)
 - Structured JSON logs
 - Correlation ID (trace_id) через все сервисы
 - Уровни: INFO, WARNING, ERROR
 
-### 9.3 Трейсинг (OpenTelemetry + Jaeger)
+### 9.4 Трейсинг (OpenTelemetry + Jaeger)
 - Distributed tracing через все сервисы
 - Latency breakdown по слоям
 

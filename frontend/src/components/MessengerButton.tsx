@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { MessageCircle, X, Send } from "lucide-react";
 import { CONTACTS } from "@/lib/constants";
+import { trackMessengerClick } from "@/lib/tracker";
 
 const messengers = [
   {
@@ -47,6 +48,7 @@ export default function MessengerButton() {
               href={m.href}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackMessengerClick(m.id as "telegram" | "max")}
               className={`flex items-center gap-3 rounded-full px-4 py-3 text-white text-sm font-medium shadow-lg transition-transform hover:scale-105 ${m.color}`}
             >
               <m.icon size={18} />
