@@ -153,20 +153,22 @@ log "  Images ready in ${PULL_TIME}s"
 deploy_direct() {
     log "── Direct Deploy (no BLUE running) ──"
 
-    docker rm -f dryclean-frontend 2>/dev/null || true
-    docker rm -f dryclean-content 2>/dev/null || true
-    docker rm -f dryclean-postgres 2>/dev/null || true
-    docker rm -f dryclean-redis 2>/dev/null || true
-    docker rm -f dryclean-tracking 2>/dev/null || true
+    docker rm -f dryclean-frontend dryclean-content dryclean-postgres \
+        dryclean-redis dryclean-tracking dryclean-prometheus dryclean-grafana \
+        dryclean-frontend-green dryclean-content-green dryclean-tracking-green \
+        2>/dev/null || true
 
-    for port in ${FRONTEND_PORT} ${CONTENT_PORT} ${TRACKING_PORT}; do
-        container=$(docker ps --filter "publish=${port}" --format "{{.Names}}" 2>/dev/null | head -1)
-        if [ -n "$container" ]; then
-            log "  Removing container '$container' occupying port ${port}"
-            docker rm -f "$container" 2>/dev/null || true
-        fi
+    for port in ${FRONTEND_PORT} ${CONTENT_PORT} ${TRACKING_PORT} ${PROMETHEUS_PORT} ${GRAFANA_PORT}; do
+        docker ps --format '{{.ID}} {{.Ports}}' | while read -r cid ports; do
+            if echo "$ports" | grep -qE "[:.]${port}->"; then
+                cname=$(docker inspect --format '{{.Name}}' "$cid" 2>/dev/null | sed 's/\///')
+                log "  Force-removing container '${cname:-$cid}' occupying port ${port}"
+                docker rm -f "$cid" 2>/dev/null || true
+            fi
+        done
     done
 
+    sleep 2
     docker network create dryclean-net 2>/dev/null || true
 
     docker run -d \
