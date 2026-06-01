@@ -1,3 +1,5 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
@@ -5,6 +7,7 @@ import Container from "@/components/ui/Container";
 import Section from "@/components/ui/Section";
 import Button from "@/components/ui/Button";
 import { SERVICES } from "@/lib/constants";
+import { trackServiceClick } from "@/lib/tracker";
 
 export default function Services() {
   return (
@@ -19,6 +22,7 @@ export default function Services() {
             <Link
               key={service.id}
               href={`/uslugi/${service.slug}`}
+              onClick={() => trackServiceClick(service.slug, service.title)}
               className="group rounded-xl border border-gray-100 bg-white p-5 sm:p-6 transition-all duration-400 hover:-translate-y-1 hover:shadow-lg"
             >
               <div className="aspect-square rounded-lg overflow-hidden relative">

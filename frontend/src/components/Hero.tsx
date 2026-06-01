@@ -6,6 +6,7 @@ import Container from "@/components/ui/Container";
 import Button from "@/components/ui/Button";
 import { SERVICES } from "@/lib/constants";
 import { createOrder } from "@/lib/api";
+import { trackFormSubmit } from "@/lib/tracker";
 
 export default function Hero() {
   const [form, setForm] = useState({ name: "", phone: "", serviceType: "" });
@@ -21,6 +22,7 @@ export default function Hero() {
         service_type: form.serviceType,
       });
       if (result) {
+        trackFormSubmit("hero", form.serviceType || undefined, true);
         setStatus("sent");
       } else {
         const res = await fetch("/api/orders", {
@@ -33,10 +35,12 @@ export default function Hero() {
           }),
         });
         if (!res.ok) throw new Error();
+        trackFormSubmit("hero", form.serviceType || undefined, true);
         setStatus("sent");
       }
       setForm({ name: "", phone: "", serviceType: "" });
     } catch {
+      trackFormSubmit("hero", form.serviceType || undefined, false);
       setStatus("error");
     }
   };

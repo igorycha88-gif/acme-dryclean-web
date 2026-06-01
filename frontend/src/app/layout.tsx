@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Inter, Montserrat } from "next/font/google";
 import MessengerButton from "@/components/MessengerButton";
+import PageTracker from "@/components/PageTracker";
 import "./globals.css";
 
 const inter = Inter({
@@ -140,6 +141,7 @@ export default function RootLayout({
         </noscript>
         {children}
         <MessengerButton />
+        <PageTracker />
       </body>
     </html>
   );

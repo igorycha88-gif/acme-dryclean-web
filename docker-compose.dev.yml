@@ -8,6 +8,7 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
       - NEXT_PUBLIC_CONTENT_API_URL=http://localhost:8011
+      - NEXT_PUBLIC_TRACKING_API_URL=http://tracking:8020
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -79,6 +80,69 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
+  tracking:
+    build:
+      context: ./backend/services/tracking
+      dockerfile: Dockerfile
+    ports:
+      - "8020:8020"
+    environment:
+      - TRACKING_DATABASE_URL=postgresql+asyncpg://dryclean:dryclean_dev@postgres:5432/dryclean_content
+      - TRACKING_DATABASE_URL_SYNC=postgresql+psycopg2://dryclean:dryclean_dev@postgres:5432/dryclean_content
+      - TRACKING_CORS_ORIGINS=["*"]
+      - TRACKING_DEBUG=false
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8020/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    ports:
+      - "9090:9090"
+    volumes:
+      - /tmp/docker-deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=15d"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    ports:
+      - "3030:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - /tmp/docker-deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - /tmp/docker-deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
 volumes:
   postgres_data:
   content_uploads:
+  prometheus_data:
+  grafana_data:
