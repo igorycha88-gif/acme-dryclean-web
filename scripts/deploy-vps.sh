@@ -158,6 +158,15 @@ deploy_direct() {
     docker rm -f dryclean-postgres 2>/dev/null || true
     docker rm -f dryclean-redis 2>/dev/null || true
     docker rm -f dryclean-tracking 2>/dev/null || true
+
+    for port in ${FRONTEND_PORT} ${CONTENT_PORT} ${TRACKING_PORT}; do
+        container=$(docker ps --filter "publish=${port}" --format "{{.Names}}" 2>/dev/null | head -1)
+        if [ -n "$container" ]; then
+            log "  Removing container '$container' occupying port ${port}"
+            docker rm -f "$container" 2>/dev/null || true
+        fi
+    done
+
     docker network create dryclean-net 2>/dev/null || true
 
     docker run -d \
