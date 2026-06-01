@@ -156,6 +156,7 @@ deploy_direct() {
     docker rm -f dryclean-frontend dryclean-content dryclean-postgres \
         dryclean-redis dryclean-tracking dryclean-prometheus dryclean-grafana \
         dryclean-frontend-green dryclean-content-green dryclean-tracking-green \
+        frontend-blue content-blue tracking-blue postgres-blue \
         2>/dev/null || true
 
     log "  Cleaning up all containers on deploy ports..."
@@ -176,6 +177,7 @@ deploy_direct() {
         fi
     done
 
+    docker network rm dryclean-net 2>/dev/null || true
     docker network create dryclean-net 2>/dev/null || true
 
     docker run -d \
@@ -196,6 +198,10 @@ deploy_direct() {
         fi
         sleep 2
     done
+
+    sleep 3
+    docker exec dryclean-postgres ping -c 1 dryclean-postgres &>/dev/null || true
+    log "  DNS network ready"
 
     docker run -d \
         --name dryclean-content \
