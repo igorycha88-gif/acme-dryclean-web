@@ -59,19 +59,31 @@ export interface TrackEventPayload {
 
 function sendEvent(data: TrackEventPayload): void {
   try {
+    const url = `${TRACKING_API}/api/v1/tracking/event`;
     const body = JSON.stringify(data);
+    const blob = new Blob([body], { type: "application/json" });
     if (navigator.sendBeacon) {
-      navigator.sendBeacon(`${TRACKING_API}/api/v1/tracking/event`, body);
+      const queued = navigator.sendBeacon(url, blob);
+      if (!queued) {
+        fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+          keepalive: true,
+        }).catch(() => {});
+      }
     } else {
-      fetch(`${TRACKING_API}/api/v1/tracking/event`, {
+      fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body,
         keepalive: true,
       }).catch(() => {});
     }
-  } catch {
-    /* silently fail */
+  } catch (e) {
+    if (typeof console !== "undefined" && console.warn) {
+      console.warn("[tracker] sendEvent failed:", e);
+    }
   }
 }
 

@@ -140,7 +140,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          source: "scripts/deploy-vps.sh,scripts/*.yml,nginx/,docker-compose.prod.yml"
+          source: "scripts/deploy-vps.sh,scripts/*.yml,nginx/,docker-compose.prod.yml,monitoring/grafana/dashboards/"
           target: "/opt/app"
           strip_components: 0
 
