@@ -200,15 +200,21 @@ deploy_direct() {
     done
 
     sleep 3
-    docker exec dryclean-postgres ping -c 1 dryclean-postgres &>/dev/null || true
-    log "  DNS network ready"
+    POSTGRES_IP=$(docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' dryclean-postgres 2>/dev/null || echo "")
+    if [ -z "$POSTGRES_IP" ]; then
+        log "  WARN: Could not get postgres IP, using hostname"
+        POSTGRES_HOST="dryclean-postgres"
+    else
+        log "  PostgreSQL IP: ${POSTGRES_IP}"
+        POSTGRES_HOST="$POSTGRES_IP"
+    fi
 
     docker run -d \
         --name dryclean-content \
         --network dryclean-net \
         --restart unless-stopped \
-        -e DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
-        -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
+        -e DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
+        -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e UPLOAD_DIR=/app/uploads \
         -v dryclean_uploads:/app/uploads \
         -p ${CONTENT_PORT}:8011 \
@@ -225,8 +231,8 @@ deploy_direct() {
         --network dryclean-net \
         --network-alias tracking-blue \
         --restart unless-stopped \
-        -e TRACKING_DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
-        -e TRACKING_DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
+        -e TRACKING_DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
+        -e TRACKING_DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e TRACKING_CORS_ORIGINS='["https://da-dryclean.ru"]' \
         -e TRACKING_DEBUG=false \
         -p ${TRACKING_PORT}:8020 \
@@ -258,6 +264,14 @@ deploy_direct() {
 deploy_blue_green() {
     log "── Blue-Green Deploy ──"
 
+    POSTGRES_IP=$(docker inspect --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' dryclean-postgres 2>/dev/null || echo "")
+    if [ -z "$POSTGRES_IP" ]; then
+        POSTGRES_HOST="dryclean-postgres"
+    else
+        log "  PostgreSQL IP: ${POSTGRES_IP}"
+        POSTGRES_HOST="$POSTGRES_IP"
+    fi
+
     docker rm -f dryclean-frontend-green 2>/dev/null || true
     docker rm -f dryclean-content-green 2>/dev/null || true
     docker rm -f dryclean-tracking-green 2>/dev/null || true
@@ -267,8 +281,8 @@ deploy_blue_green() {
         --name dryclean-content-green \
         --network dryclean-net \
         --restart no \
-        -e DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
-        -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
+        -e DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
+        -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e UPLOAD_DIR=/app/uploads \
         -v dryclean_uploads:/app/uploads \
         -p ${GREEN_CONTENT_PORT}:8011 \
@@ -315,8 +329,8 @@ EOF
         --name dryclean-content \
         --network dryclean-net \
         --restart unless-stopped \
-        -e DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
-        -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
+        -e DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
+        -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e UPLOAD_DIR=/app/uploads \
         -v dryclean_uploads:/app/uploads \
         -p ${CONTENT_PORT}:8011 \
@@ -334,8 +348,8 @@ EOF
         --network dryclean-net \
         --network-alias tracking-blue \
         --restart unless-stopped \
-        -e TRACKING_DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
-        -e TRACKING_DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
+        -e TRACKING_DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
+        -e TRACKING_DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e TRACKING_CORS_ORIGINS='["https://da-dryclean.ru"]' \
         -e TRACKING_DEBUG=false \
         -p ${TRACKING_PORT}:8020 \
@@ -564,8 +578,8 @@ if [ "$SMOKE_FAIL" -gt 0 ]; then
             --name dryclean-content \
             --network dryclean-net \
             --restart unless-stopped \
-            -e DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
-            -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@dryclean-postgres:5432/${POSTGRES_DB:-dryclean_content}" \
+            -e DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
+            -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
             -e UPLOAD_DIR=/app/uploads \
             -v dryclean_uploads:/app/uploads \
             -p ${CONTENT_PORT}:8011 \
