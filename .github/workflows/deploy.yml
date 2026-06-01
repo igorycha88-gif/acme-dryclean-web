@@ -150,7 +150,7 @@ jobs:
             export GITHUB_ACTOR="${{ github.actor }}"
             export IMAGE_TAG="${{ needs.docker.outputs.image_tag }}"
             export GHCR_REGISTRY="${{ env.REGISTRY }}"
-            export GHCR_REPO="${{ github.repository }}"
+            export GHCR_REPO="${{ github.repository_owner }}"
 
             APP_DIR="/opt/app"
             cd "$APP_DIR"
