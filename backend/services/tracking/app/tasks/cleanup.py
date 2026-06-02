@@ -1,6 +1,8 @@
+from datetime import UTC, datetime, timedelta
+
 import structlog
-from datetime import datetime, timedelta, timezone
 from sqlalchemy import delete
+
 from app.database import async_session_factory
 from app.models.analytics import AnalyticsEvent, AnalyticsSession
 
@@ -10,7 +12,7 @@ RETENTION_DAYS = 90
 
 
 async def cleanup_old_events():
-    cutoff = datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS)
+    cutoff = datetime.now(UTC) - timedelta(days=RETENTION_DAYS)
     async with async_session_factory() as db:
         try:
             del_events = await db.execute(

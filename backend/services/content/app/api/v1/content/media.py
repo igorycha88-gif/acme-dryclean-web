@@ -131,7 +131,9 @@ async def delete_media(
 
 @router.get("/file/{filename}")
 async def get_file(filename: str):
-    file_path = UPLOAD_DIR / filename
+    file_path = (UPLOAD_DIR / filename).resolve()
+    if not file_path.is_relative_to(UPLOAD_DIR.resolve()):
+        raise HTTPException(status_code=403, detail="Access denied")
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(file_path)

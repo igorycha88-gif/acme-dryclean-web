@@ -1,8 +1,9 @@
-
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env")
+
     service_name: str = "content-service"
     host: str = "0.0.0.0"
     port: int = 8011
@@ -17,9 +18,6 @@ class Settings(BaseSettings):
     upload_dir: str = "/app/uploads"
     max_upload_size: int = 10 * 1024 * 1024
     allowed_extensions: list[str] = ["jpg", "jpeg", "png", "gif", "webp"]
-
-    class Config:
-        env_file = ".env"
 
 
 settings = Settings()

@@ -1,3 +1,3 @@
-from app.api.v1.endpoints import track, stats
+from app.api.v1.endpoints import stats, track
 
 __all__ = ["track", "stats"]

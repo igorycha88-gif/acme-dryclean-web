@@ -1,8 +1,10 @@
 import os
 import sys
-from pathlib import Path
 from logging.config import fileConfig
+from pathlib import Path
+
 from sqlalchemy import engine_from_config, pool
+
 from alembic import context
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -16,8 +18,7 @@ if sync_url:
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-from app.models.base import Base
-from app.models.analytics import AnalyticsEvent, AnalyticsSession
+from app.models.base import Base  # noqa: E402
 
 target_metadata = Base.metadata
 

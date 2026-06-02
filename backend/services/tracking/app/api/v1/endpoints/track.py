@@ -2,10 +2,10 @@ import structlog
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.metrics import events_duration, events_total
 from app.database import get_db
 from app.schemas.event import EventCreate, EventResponse
 from app.services.analytics import AnalyticsService
-from app.core.metrics import events_total, events_duration
 
 logger = structlog.get_logger()
 router = APIRouter(prefix="/tracking", tags=["tracking"])

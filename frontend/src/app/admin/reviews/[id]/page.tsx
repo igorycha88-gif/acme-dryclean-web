@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { contentApi } from "@/lib/api";
 import { ArrowLeft, Save, Star } from "lucide-react";
 
-export default function EditReviewPage({ params }: { params: { id: string } }) {
+export default function EditReviewPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -13,17 +13,19 @@ export default function EditReviewPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     async function loadReview() {
-      const result = await contentApi.reviews.get(params.id);
+      const { id } = await params;
+      const result = await contentApi.reviews.get(id);
       if (result) setForm({ author: result.author, service: result.service, rating: result.rating, text: result.text, is_active: result.is_active });
       setLoadingData(false);
     }
     loadReview();
-  }, [params.id]);
+  }, [params]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const result = await contentApi.reviews.update(params.id, form);
+    const { id } = await params;
+    const result = await contentApi.reviews.update(id, form);
     setLoading(false);
     if (result) router.push("/admin/reviews");
   }

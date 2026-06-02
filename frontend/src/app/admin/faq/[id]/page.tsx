@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { contentApi } from "@/lib/api";
 import { ArrowLeft, Save } from "lucide-react";
 
-export default function EditFAQPage({ params }: { params: { id: string } }) {
+export default function EditFAQPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -13,19 +13,21 @@ export default function EditFAQPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     async function loadFAQ() {
-      const result = await contentApi.faq.get(params.id);
+      const { id } = await params;
+      const result = await contentApi.faq.get(id);
       if (result) {
         setForm({ question: result.question, answer: result.answer, is_active: result.is_active, sort_order: result.sort_order });
       }
       setLoadingData(false);
     }
     loadFAQ();
-  }, [params.id]);
+  }, [params]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const result = await contentApi.faq.update(params.id, form);
+    const { id } = await params;
+    const result = await contentApi.faq.update(id, form);
     setLoading(false);
     if (result) router.push("/admin/faq");
   }

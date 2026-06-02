@@ -1,5 +1,7 @@
-import structlog
 from pathlib import Path
+
+import structlog
+
 from app.config import settings
 
 logger = structlog.get_logger()
