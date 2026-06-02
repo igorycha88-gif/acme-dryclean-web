@@ -27,7 +27,7 @@
           "thresholds": { "mode": "absolute", "steps": [{"value": null, "color": "blue"}] }
         }
       },
-      "description": "Уникальные сессии за 24 часа"
+      "description": "Уникальные сессии за последние 24 часа (скользящее окно — число меняется со временем)"
     },
     {
       "id": 2,
@@ -306,6 +306,46 @@
           "color": { "mode": "palette-classic" }
         }
       }
+    },
+    {
+      "id": 17,
+      "title": "Всего посетителей",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 34 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT COUNT(DISTINCT session_id) AS value FROM analytics_events",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "fixed", "fixedColor": "dark-blue" },
+          "thresholds": { "mode": "absolute", "steps": [{"value": null, "color": "blue"}] }
+        }
+      },
+      "description": "Кумулятивное количество уникальных сессий за ВСЁ время (не зависит от деплоя)"
+    },
+    {
+      "id": 18,
+      "title": "Всего событий",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 34 },
+      "datasource": { "type": "postgres", "uid": "PostgreSQL" },
+      "targets": [{
+        "format": "table",
+        "rawSql": "SELECT COUNT(*) AS value FROM analytics_events",
+        "refId": "A"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": { "mode": "fixed", "fixedColor": "dark-green" },
+          "thresholds": { "mode": "absolute", "steps": [{"value": null, "color": "green"}] }
+        }
+      },
+      "description": "Кумулятивное количество всех событий за ВСЁ время (не зависит от деплоя)"
     }
   ],
   "templating": {
