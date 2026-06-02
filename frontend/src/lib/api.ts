@@ -14,6 +14,7 @@ export function setToken(token: string): void {
 
 export function removeToken(): void {
   localStorage.removeItem(TOKEN_KEY);
+  document.cookie = `${TOKEN_KEY}=; path=/; max-age=0`;
 }
 
 export interface User {
@@ -38,7 +39,10 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T |
 
 async function fetchAPIFormData<T>(endpoint: string, formData: FormData): Promise<T | null> {
   try {
-    const res = await fetch(CONTENT_API_URL + endpoint, { method: "POST", body: formData });
+    const token = getToken();
+    const headers: HeadersInit = {};
+    if (token) (headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+    const res = await fetch(CONTENT_API_URL + endpoint, { method: "POST", body: formData, headers });
     if (!res.ok) throw new Error("API error: " + res.status);
     return await res.json();
   } catch { return null; }

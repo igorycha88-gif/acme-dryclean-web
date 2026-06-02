@@ -1,13 +1,15 @@
 import uuid
+from datetime import UTC, datetime, timedelta
+
 import structlog
-from datetime import datetime, timedelta, timezone
-from sqlalchemy import select, func, literal_column
+from sqlalchemy import func, literal_column, select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.config import settings
+from app.core.geo import geo_resolver
 from app.models.analytics import AnalyticsEvent, AnalyticsSession
 from app.schemas.event import EventCreate
 from app.schemas.stats import StatsPeriod
-from app.core.geo import geo_resolver
-from app.config import settings
 
 logger = structlog.get_logger()
 
@@ -70,12 +72,14 @@ class AnalyticsService:
 
         await self._update_session(event_data, referrer_group, ip_address, user_agent, geo)
 
+        await self.db.flush()
+
         return event
 
     async def _update_session(self, event_data: EventCreate, referrer_group: str,
                                ip_address: str | None, user_agent: str | None,
                                geo: dict[str, str | None]):
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         timeout = timedelta(minutes=settings.session_timeout_minutes)
 
         result = await self.db.execute(
@@ -86,9 +90,12 @@ class AnalyticsService:
         session = result.scalar_one_or_none()
 
         if session:
-            time_since_last = now - session.last_activity_at
+            last_at = session.last_activity_at
+            if last_at and last_at.tzinfo is None:
+                last_at = last_at.replace(tzinfo=UTC)
+            time_since_last = now - last_at if last_at else timeout
             session.last_activity_at = now
-            if time_since_last < timeout:
+            if event_data.event_type == "page_view" and time_since_last < timeout:
                 session.page_views_count = (session.page_views_count or 0) + 1
         else:
             session = AnalyticsSession(
@@ -109,10 +116,13 @@ class AnalyticsService:
             self.db.add(session)
 
         if event_data.event_type == "page_view":
-            session.duration_seconds = int((now - session.started_at).total_seconds())
+            started = session.started_at
+            if started and started.tzinfo is None:
+                started = started.replace(tzinfo=UTC)
+            session.duration_seconds = int((now - started).total_seconds()) if started else 0
 
     async def get_stats(self, period: StatsPeriod = "24h") -> dict:
-        since = datetime.now(timezone.utc) - (
+        since = datetime.now(UTC) - (
             timedelta(hours=24) if period == "24h"
             else timedelta(days=7) if period == "7d"
             else timedelta(days=30)
@@ -234,7 +244,7 @@ class AnalyticsService:
 
         success_q = select(func.count(AnalyticsEvent.id)).where(
             AnalyticsEvent.event_type == "form_submit",
-            AnalyticsEvent.payload["success"].as_boolean() == True,
+            AnalyticsEvent.payload["success"].as_boolean().is_(True),
             AnalyticsEvent.created_at >= since
         )
         success = (await self.db.execute(success_q)).scalar() or 0

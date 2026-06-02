@@ -671,12 +671,186 @@ const PRODUCTION_DEPLOY_STAGE = {
     «деплой на VPS», «задеплой на сервер», «выложи на сервер»,
     «production deploy», «deploy to prod»`,
 
+  // ═══════════════════════════════════════════════════════════════════
+  // ФАЗА 0: ОБЯЗАТЕЛЬНЫЙ АНАЛИЗ ИЗМЕНЕНИЙ (PROD-ANALYSIS)
+  // ═══════════════════════════════════════════════════════════════════
+  // КРИТИЧЕСКИ: Выполняется ВСЕГДА до любых действий с VPS.
+  // Цель: выявить ВСЕ изменения, влияющие на production,
+  // сформировать задачи подготовки, оценить риски.
+  // ═══════════════════════════════════════════════════════════════════
+
+  preDeployAnalysis: {
+    name: "PROD-ANALYSIS",
+    icon: "🔍",
+
+    description: `Обязательный анализ изменений перед продакшн-деплоем.
+      Выполняется ВСЕГДА, до любых действий с VPS.
+      Без завершённого PROD-ANALYSIS деплой ЗАПРЕЩЁН.`,
+
+    steps: [
+      {
+        id: "PA0",
+        action: "Вывести заголовок: '🔍 PROD-ANALYSIS: Начинаю анализ изменений перед продакшн-деплоем'",
+      },
+      {
+        id: "PA1",
+        action: `СБОР ИНФОРМАЦИИ ОБ ИЗМЕНЕНИЯХ:
+          - Определить последний деплой-тег: git tag --sort=-creatordate | head -5
+          - Показать последние коммиты: git log --oneline -20
+          - Сравнить с последним production-коммитом:
+            git diff <last-prod-commit>..HEAD --stat
+            git diff <last-prod-commit>..HEAD --name-only`,
+        critical: true,
+      },
+      {
+        id: "PA2",
+        action: `АНАЛИЗ МИГРАЦИЙ БД:
+          - Проверить новые файлы в */alembic/versions/ с последнего деплоя
+          - Для каждой миграции:
+            * Сервис, версия, up/down SQL
+            * Тип: ADD COLUMN / DROP COLUMN / CREATE TABLE / ALTER TABLE / etc.
+            * Оценка риска: LOW / MEDIUM / HIGH / CRITICAL
+            * Destructive changes? (DROP TABLE, DROP COLUMN — требуют подготовки)
+            * Data loss risk? (требуют бэкапа)
+            * Long-running? (большая таблица — требуют downtime window)
+            * Порядок применения (если >1 сервиса)
+            * План отката: alembic downgrade -1
+          - Сформировать задачу PROD-MIGRATE-XXX для каждой миграции`,
+        critical: true,
+      },
+      {
+        id: "PA3",
+        action: `АНАЛИЗ НОВЫХ/ИЗМЕНЁННЫХ СЕРВИСОВ:
+          - Сравнить docker-compose.yml с последней прод-версией
+          - Выявить: новые сервисы, удалённые сервисы, изменённые порты
+          - Для каждого нового сервиса проверить:
+            * Dockerfile существует?
+            * Healthcheck настроен?
+            * Зависимости от других сервисов?
+            * Требуется новая БД/очередь/топик?
+            * Требуется запись в CI/CD? (→ PROD-CICD-XXX)
+          - Сформировать задачу PROD-SERVICE-XXX для каждого нового/изменённого сервиса`,
+        critical: true,
+      },
+      {
+        id: "PA4",
+        action: `АНАЛИЗ CI/CD И ИНФРАСТРУКТУРЫ:
+          - Проверить изменения в .github/workflows/ с последнего деплоя
+          - Проверить изменения в nginx/, docker-compose.yml, Dockerfile*
+          - Выявить: новые workflow, изменённые steps, новые secrets/variables
+          - Если добавлен новый сервис → есть ли он в CI/CD pipeline?
+          - Если изменён docker-compose → все ли сервисы описаны корректно?
+          - Сформировать задачу PROD-CICD-XXX если требуется корректировка`,
+      },
+      {
+        id: "PA5",
+        action: `АНАЛИЗ ENV-ПЕРЕМЕННЫХ:
+          - Сравнить .env.example с .env.production
+          - Выявить новые переменные, которых нет в .env.production
+          - Проверить: нет ли дефолтных паролей в прод-конфигурации
+          - Сформировать задачу PROD-ENV-XXX для каждой новой переменной`,
+      },
+      {
+        id: "PA6",
+        action: `АНАЛИЗ ЗАВИСИМОСТЕЙ И КОНФИГУРАЦИИ:
+          - Проверить изменения в requirements.txt, package.json
+          - Проверить изменения в конфигурационных файлах
+          - Проверить изменения в RabbitMQ топологиях (новые очереди/exchanges)
+          - Сформировать задачу PROD-CONFIG-XXX для каждого критичного изменения`,
+      },
+      {
+        id: "PA7",
+        action: `ФОРМИРОВАНИЕ ОТЧЁТА АНАЛИЗА:
+          Вывести структурированный отчёт:
+          ═══════════════════════════════════════════════════════
+          === ОТЧЁТ АНАЛИЗА ПРОДАКШН-ДЕПЛОЯ ===
+
+          📊 Сводка изменений:
+          - Файлов изменено: [N]
+          - Сервисов затронуто: [N]
+          - Новых сервисов: [N]
+          - Миграций БД: [N]
+          - Новых env-переменных: [N]
+          - CI/CD изменений: [N]
+
+          📋 Сформированные задачи:
+          [PROD-MIGRATE-001] ... (Risk: LOW/MEDIUM/HIGH/CRITICAL)
+          [PROD-SERVICE-001] ...
+          [PROD-CICD-001] ...
+          [PROD-ENV-001] ...
+          [PROD-CONFIG-001] ...
+
+          ⚠️ Предупреждения: [список или «Нет»]
+          ✅ / ❌ Готовность к деплою: [ГОТОВ / ТРЕБУЕТСЯ ПОДГОТОВКА]
+          ═══════════════════════════════════════════════════════`,
+        critical: true,
+      },
+      {
+        id: "PA8",
+        action: `ПРИНЯТИЕ РЕШЕНИЯ:
+          Если ГОТОВ (нет критичных задач или задачи выполнены):
+            → Вывести отчёт
+            → Спросить подтверждение пользователя через question tool
+            → Перейти к Фазе 1 (деплой)
+
+          Если ТРЕБУЕТСЯ ПОДГОТОВКА:
+            → Вывести отчёт со списком задач
+            → Спросить пользователя через question tool:
+              1. Выполнить задачи подготовки сейчас?
+                 (→ конвейер: Аналитик → Разработчик → Тестировщик → DevOps)
+              2. Отложить деплой?
+                 (→ остановить, задачи сохранены в отчёте)
+              3. Игнорировать предупреждения?
+                 (→ ТОЛЬКО с явного согласия, отметить risk)
+
+          ЗАПРЕЩЕНО:
+          - Начинать деплой без завершённого PROD-ANALYSIS
+          - Игнорировать критичные проблемы (data loss, security, breaking changes)
+          - Пропускать фазу анализа (даже если «всё понятно»)`,
+        critical: true,
+      },
+    ],
+
+    taskTypes: {
+      PROD_MIGRATE: {
+        prefix: "PROD-MIGRATE-",
+        description: "Задача на миграцию БД на production",
+        fields: ["service", "migration_version", "type", "risk", "warnings", "rollback_plan"],
+      },
+      PROD_SERVICE: {
+        prefix: "PROD-SERVICE-",
+        description: "Задача на новый/изменённый сервис на production",
+        fields: ["service_name", "port", "requires_db", "requires_redis", "requires_rabbitmq", "cicd_needed"],
+      },
+      PROD_CICD: {
+        prefix: "PROD-CICD-",
+        description: "Задача на корректировку CI/CD pipeline",
+        fields: ["workflow_file", "action", "services_affected"],
+      },
+      PROD_ENV: {
+        prefix: "PROD-ENV-",
+        description: "Задача на новые env-переменные для production",
+        fields: ["variable_name", "service", "default_value", "secret", "needs_user_input"],
+      },
+      PROD_CONFIG: {
+        prefix: "PROD-CONFIG-",
+        description: "Задача на конфигурационные изменения",
+        fields: ["component", "change_type", "details", "rollback_plan"],
+      },
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ФАЗА 1: ДЕПЛОЙ НА VPS
+  // ═══════════════════════════════════════════════════════════════════
+
   prerequisites: `
     Перед запуском DevOps проверяет:
     1. Все тесты PASS? (был GO от Тестировщика в текущей/предыдущей сессии)
     2. Локальный деплой OK? (все сервисы healthy)
     3. Есть несохранённые изменения? → предложить закоммитить
-    4. .env.production существует и содержит все переменные?`,
+    4. .env.production существует и содержит все переменные?
+    5. PROD-ANALYSIS завершён? Все задачи подготовки выполнены?`,
 
   steps: [
     {
@@ -689,7 +863,8 @@ const PRODUCTION_DEPLOY_STAGE = {
         - GO от Тестировщика был? Тесты PASS?
         - Локальный деплой healthy?
         - Несохранённые изменения? (git status)
-        - .env.production существует?`,
+        - .env.production существует?
+        - PROD-ANALYSIS завершён? Все задачи подготовки выполнены?`,
     },
     {
       id: "PROD3",
@@ -718,8 +893,18 @@ const PRODUCTION_DEPLOY_STAGE = {
     },
     {
       id: "PROD7",
-      action: `МИГРАЦИИ БД НА VPS:
+      action: `МИГРАЦИИ БД НА VPS (по плану из PROD-ANALYSIS):
+        Для каждой PROD-MIGRATE задачи:
+        1. Выполнить миграцию в определённом порядке
+        2. Проверить целостность данных после каждой
         ssh user@vps "cd /app && docker compose exec <service> alembic upgrade head"`,
+    },
+    {
+      id: "PROD7.5",
+      action: `НАСТРОЙКА НОВЫХ ИНФРАСТРУКТУРНЫХ КОМПОНЕНТОВ (по плану PROD-ANALYSIS):
+        - Создать новые RabbitMQ очереди/exchanges (PROD-CONFIG задачи)
+        - Добавить новые env-переменные на VPS (PROD-ENV задачи)
+        - Обновить Nginx конфигурацию если добавлены новые сервисы (PROD-SERVICE задачи)`,
     },
     {
       id: "PROD8",
@@ -732,7 +917,7 @@ const PRODUCTION_DEPLOY_STAGE = {
       id: "PROD9",
       action: `ОТКАТ ПРИ ОШИБКЕ:
         - Вернуть предыдущую версию: docker compose down && docker compose up -d <previous-tag>
-        - Откатить миграции: alembic downgrade -1`,
+        - Откатить миграции по плану из PROD-MIGRATE: alembic downgrade -1`,
     },
     {
       id: "PROD10",
@@ -741,7 +926,11 @@ const PRODUCTION_DEPLOY_STAGE = {
         ✅ VPS: <ip> подключение OK
         ✅ Образы собраны (production, --no-cache)
         ✅ Контейнеры запущены на VPS
-        ✅ Миграции БД применены
+        ✅ Миграции БД применены (по плану PROD-ANALYSIS)
+        ✅ Новые сервисы развёрнуты (по плану PROD-ANALYSIS)
+        ✅ CI/CD обновлён (по плану PROD-ANALYSIS)
+        ✅ Env-переменные настроены (по плану PROD-ANALYSIS)
+        ✅ Инфраструктурные компоненты настроены (RabbitMQ, Nginx)
         ✅ Все сервисы healthy (production)
         ✅ SSL/HTTPS OK
         ✅ Логи без ошибок
@@ -751,6 +940,7 @@ const PRODUCTION_DEPLOY_STAGE = {
         VPS: [ip/domain]
         URL: [production URL]
         Версия: [commit hash / tag]
+        PROD-ANALYSIS: [краткая сводка — что обнаружено и выполнено]
         🎉 Продакшн-деплой завершён успешно`,
       critical: true,
     },
@@ -764,7 +954,8 @@ const PRODUCTION_DEPLOY_STAGE = {
          - Полный лог ошибки
          - Статус контейнеров на VPS
       3. Предложить пользователю:
-         - Откат к предыдущей версии
+         - Откат к предыдущей версии (docker compose down + up previous-tag)
+         - Откат миграций по плану PROD-MIGRATE (alembic downgrade)
          - Диагностику проблемы
          - Повторную попытку`,
   },

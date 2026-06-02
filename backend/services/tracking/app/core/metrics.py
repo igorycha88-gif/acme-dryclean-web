@@ -1,4 +1,4 @@
-from prometheus_client import Counter, Histogram, generate_latest, REGISTRY
+from prometheus_client import REGISTRY, Counter, Histogram, generate_latest
 from starlette.responses import Response
 
 events_total = Counter(

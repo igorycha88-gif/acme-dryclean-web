@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { contentApi } from "@/lib/api";
 import { ArrowLeft, Save } from "lucide-react";
 
-export default function EditServicePage({ params }: { params: { id: string } }) {
+export default function EditServicePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
@@ -22,7 +22,8 @@ export default function EditServicePage({ params }: { params: { id: string } }) 
 
   useEffect(() => {
     async function loadService() {
-      const result = await contentApi.services.get(params.id);
+      const { id } = await params;
+      const result = await contentApi.services.get(id);
       if (result) {
         setForm({
           title: result.title,
@@ -38,7 +39,7 @@ export default function EditServicePage({ params }: { params: { id: string } }) 
       setLoadingData(false);
     }
     loadService();
-  }, [params.id]);
+  }, [params]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -49,7 +50,8 @@ export default function EditServicePage({ params }: { params: { id: string } }) 
       price: form.price ? parseFloat(form.price) : null,
     };
 
-    const result = await contentApi.services.update(params.id, data);
+    const { id } = await params;
+    const result = await contentApi.services.update(id, data);
     setLoading(false);
 
     if (result) {
