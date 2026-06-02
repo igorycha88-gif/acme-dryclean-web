@@ -3,7 +3,10 @@ const TRACKING_API =
 
 const VISITOR_KEY = "da_tracker_visitor_id";
 const SESSION_KEY = "da_tracker_session_id";
+const QUEUE_KEY = "da_tracker_queue";
 const SESSION_TIMEOUT = 30 * 60 * 1000;
+const MAX_QUEUE_SIZE = 50;
+const FLUSH_INTERVAL = 5000;
 
 function generateId(): string {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -42,6 +45,96 @@ function getSessionId(): string {
   return id;
 }
 
+interface QueuedEvent {
+  data: TrackEventPayload;
+  attempts: number;
+  queuedAt: number;
+}
+
+function getQueue(): QueuedEvent[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(QUEUE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveQueue(queue: QueuedEvent[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  } catch {
+    // localStorage full — drop oldest
+    try {
+      const trimmed = queue.slice(-Math.floor(MAX_QUEUE_SIZE / 2));
+      localStorage.setItem(QUEUE_KEY, JSON.stringify(trimmed));
+    } catch {
+      // give up
+    }
+  }
+}
+
+function enqueueEvent(data: TrackEventPayload): void {
+  const queue = getQueue();
+  queue.push({ data, attempts: 0, queuedAt: Date.now() });
+  if (queue.length > MAX_QUEUE_SIZE) {
+    queue.splice(0, queue.length - MAX_QUEUE_SIZE);
+  }
+  saveQueue(queue);
+}
+
+async function flushQueue(): Promise<void> {
+  const queue = getQueue();
+  if (queue.length === 0) return;
+
+  const queuedAtCutoff = queue[queue.length - 1].queuedAt;
+  const events = queue.map((e) => e.data);
+
+  try {
+    const url = `${TRACKING_API}/api/v1/tracking/events/batch`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ events }),
+      keepalive: true,
+    });
+
+    if (res.ok) {
+      const currentQueue = getQueue();
+      const remaining = currentQueue.filter((e) => e.queuedAt > queuedAtCutoff);
+      saveQueue(remaining);
+    } else {
+      const currentQueue = getQueue();
+      const updated = currentQueue.map((e) =>
+        e.queuedAt <= queuedAtCutoff ? { ...e, attempts: e.attempts + 1 } : e
+      );
+      const kept = updated.filter((e) => e.attempts < 5);
+      saveQueue(kept);
+    }
+  } catch {
+    const currentQueue = getQueue();
+    const updated = currentQueue.map((e) =>
+      e.queuedAt <= queuedAtCutoff ? { ...e, attempts: e.attempts + 1 } : e
+    );
+    const kept = updated.filter((e) => e.attempts < 5);
+    saveQueue(kept);
+  }
+}
+
+let flushTimer: ReturnType<typeof setInterval> | null = null;
+
+function startFlushLoop(): void {
+  if (typeof window === "undefined") return;
+  if (flushTimer) return;
+  flushTimer = setInterval(flushQueue, FLUSH_INTERVAL);
+}
+
+if (typeof window !== "undefined") {
+  startFlushLoop();
+}
+
 export interface TrackEventPayload {
   session_id: string;
   visitor_id: string;
@@ -66,11 +159,15 @@ function sendEvent(data: TrackEventPayload): void {
       headers: { "Content-Type": "application/json" },
       body,
       keepalive: true,
-    }).catch(() => {});
-  } catch (e) {
-    if (typeof console !== "undefined" && console.warn) {
-      console.warn("[tracker] sendEvent failed:", e);
-    }
+    }).then((res) => {
+      if (!res.ok) {
+        enqueueEvent(data);
+      }
+    }).catch(() => {
+      enqueueEvent(data);
+    });
+  } catch {
+    enqueueEvent(data);
   }
 }
 

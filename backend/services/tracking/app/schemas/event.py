@@ -20,6 +20,15 @@ class EventCreate(BaseModel):
     referrer: str | None = None
 
 
+class BatchEventCreate(BaseModel):
+    events: list[EventCreate] = Field(max_length=50)
+
+
+class BatchEventResponse(BaseModel):
+    processed: int
+    event_ids: list[UUID]
+
+
 class EventResponse(BaseModel):
     event_id: UUID
     created_at: datetime
