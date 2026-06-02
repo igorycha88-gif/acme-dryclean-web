@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import Container from "@/components/ui/Container";
 import Section from "@/components/ui/Section";
@@ -10,6 +11,8 @@ import { SERVICES } from "@/lib/constants";
 import { trackServiceClick } from "@/lib/tracker";
 
 export default function Services() {
+  const router = useRouter();
+
   return (
     <Section id="services">
       <Container>
@@ -22,7 +25,11 @@ export default function Services() {
             <Link
               key={service.id}
               href={`/uslugi/${service.slug}`}
-              onClick={() => trackServiceClick(service.slug, service.title)}
+              onClick={(e) => {
+                e.preventDefault();
+                trackServiceClick(service.slug, service.title);
+                setTimeout(() => router.push(`/uslugi/${service.slug}`), 300);
+              }}
               className="group rounded-xl border border-gray-100 bg-white p-5 sm:p-6 transition-all duration-400 hover:-translate-y-1 hover:shadow-lg"
             >
               <div className="aspect-square rounded-lg overflow-hidden relative">

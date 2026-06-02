@@ -148,9 +148,12 @@ export interface TrackEventPayload {
   payload: Record<string, unknown>;
   page_url?: string;
   referrer?: string;
+  _ts?: number;
 }
 
 function sendEvent(data: TrackEventPayload): void {
+  data._ts = Date.now();
+  enqueueEvent(data);
   try {
     const url = `${TRACKING_API}/api/v1/tracking/event`;
     const body = JSON.stringify(data);
@@ -160,15 +163,15 @@ function sendEvent(data: TrackEventPayload): void {
       body,
       keepalive: true,
     }).then((res) => {
-      if (!res.ok) {
-        enqueueEvent(data);
+      if (res.ok) {
+        const queue = getQueue();
+        const remaining = queue.filter(
+          (e) => e.queuedAt !== data._ts
+        );
+        saveQueue(remaining);
       }
-    }).catch(() => {
-      enqueueEvent(data);
-    });
-  } catch {
-    enqueueEvent(data);
-  }
+    }).catch(() => {});
+  } catch {}
 }
 
 export function trackPageView(url?: string, referrer?: string): void {

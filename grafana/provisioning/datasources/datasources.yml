@@ -5,7 +5,7 @@ datasources:
     uid: PostgreSQL
     type: postgres
     access: proxy
-    url: 172.26.0.20:5432
+    url: postgres:5432
     user: dryclean
     secureJsonData:
       password: ibVeIauhIvmILAFjVh03
@@ -20,5 +20,5 @@ datasources:
     uid: Prometheus
     type: prometheus
     access: proxy
-    url: http://172.30.0.10:9090
+    url: http://prometheus:9090
     isDefault: true

@@ -1,7 +1,7 @@
 import uuid
 
 from sqlalchemy import JSON, Column, DateTime, Integer, String, Text
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.dialects.postgresql import INET, UUID as PG_UUID
 from sqlalchemy.sql import func
 
 from app.models.base import Base
@@ -20,7 +20,7 @@ class AnalyticsEvent(Base):
     referrer = Column(Text, nullable=True)
     referrer_group = Column(String(50), nullable=True)
     user_agent = Column(Text, nullable=True)
-    ip_address = Column(String(45), nullable=True)
+    ip_address = Column(INET, nullable=True)
     geo_city = Column(String(100), nullable=True)
     geo_country = Column(String(100), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
@@ -36,7 +36,7 @@ class AnalyticsSession(Base):
     referrer = Column(Text, nullable=True)
     referrer_group = Column(String(50), nullable=True)
     user_agent = Column(Text, nullable=True)
-    ip_address = Column(String(45), nullable=True)
+    ip_address = Column(INET, nullable=True)
     geo_city = Column(String(100), nullable=True)
     geo_country = Column(String(100), nullable=True)
     page_views_count = Column(Integer, nullable=False, default=1)

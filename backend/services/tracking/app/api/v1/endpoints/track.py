@@ -53,6 +53,7 @@ async def track_events_batch(
                 event_ids.append(record.id)
                 events_total.labels(event_type=event.event_type, status="success").inc()
             except Exception as e:
+                await db.rollback()
                 events_total.labels(event_type=event.event_type, status="error").inc()
                 logger.error("batch_event_failed", event_type=event.event_type, error=str(e))
 
