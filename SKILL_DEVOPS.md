@@ -469,19 +469,213 @@ docker image prune -f
 2. Локальный деплой OK (все сервисы healthy)
 3. Нет несохранённых изменений (или пользователь подтвердил)
 4. .env.production существует и содержит все переменные
+5. **PROD-ANALYSIS завершён** (Фаза 0 — ОБЯЗАТЕЛЬНО)
 
-### Шаги Production Deploy
+---
+
+### Фаза 0 — Pre-Deploy Analysis (PROD-ANALYSIS) — ОБЯЗАТЕЛЬНА
+
+**КРИТИЧЕСКИ ВАЖНО:** Эта фаза выполняется ВСЕГДА, до любых действий с VPS.
+
+#### Цель
+
+Выявить ВСЕ изменения, которые могут повлиять на production, и сформировать задачи на подготовку прод-версии. Без завершённого PROD-ANALYSIS деплой **ЗАПРЕЩЁН**.
+
+#### Шаги Pre-Deploy Analysis
+
+| Шаг | Описание | Команда / Действие |
+|-----|----------|---------------------|
+| PA-001 | Вывести заголовок | `🔍 PROD-ANALYSIS: Начинаю анализ изменений перед продакшн-деплоем` |
+| PA-002 | Определить последний прод-коммит | `git tag --sort=-creatordate \| head -5` + `git log --oneline -20` |
+| PA-003 | Собрать список изменений | `git diff <last-prod-commit>..HEAD --stat` + `--name-only` |
+| PA-004 | Анализ миграций БД | Проверить `*/alembic/versions/` — см. ниже |
+| PA-005 | Анализ новых/изменённых сервисов | Сравнить `docker-compose.yml` с прод-версией |
+| PA-006 | Анализ CI/CD | Проверить `.github/workflows/` изменения |
+| PA-007 | Анализ env-переменных | Сравнить `.env.example` с `.env.production` |
+| PA-008 | Анализ зависимостей и конфигурации | `requirements.txt`, `package.json`, RabbitMQ топологии |
+| PA-009 | Сформировать отчёт | Структурированный отчёт с задачами |
+| PA-010 | Принять решение | ГОТОВ → Фаза 1, ТРЕБУЕТСЯ ПОДГОТОВКА → задачи |
+
+#### Детализация шагов анализа
+
+**PA-004: Анализ миграций БД**
+
+Для каждого нового файла в `*/alembic/versions/`:
+
+1. Прочитать файл миграции
+2. Определить:
+   - Сервис (из пути: `backend/services/<service>/alembic/versions/`)
+   - Версия (revision ID)
+   - Тип операции (ADD COLUMN, DROP COLUMN, CREATE TABLE, ALTER TABLE и т.д.)
+   - Up/Down SQL
+3. Оценить риск:
+   - **LOW** — ADD COLUMN (nullable или с default), CREATE TABLE, CREATE INDEX
+   - **MEDIUM** — ALTER COLUMN type, ADD CONSTRAINT, CREATE INDEX CONCURRENTLY
+   - **HIGH** — DROP COLUMN, DROP TABLE, RENAME COLUMN (data loss risk)
+   - **CRITICAL** — Миграции с data transformation, массовые UPDATE
+4. Сформировать задачу **PROD-MIGRATE-XXX**:
+   ```
+   [PROD-MIGRATE-XXX] Миграция <service>: <description>
+     Сервис: <service>
+     Версия: <revision_id>
+     Тип: <ADD COLUMN / DROP TABLE / etc.>
+     Risk: LOW / MEDIUM / HIGH / CRITICAL
+     Destructive: YES / NO
+     Data loss: YES / NO
+     Long-running: YES / NO
+     Предупреждения: <описание или «Нет»>
+     План отката: alembic downgrade -1
+     Up SQL: <sql>
+     Down SQL: <sql>
+   ```
+
+**PA-005: Анализ новых/изменённых сервисов**
+
+Сравнить `docker-compose.yml` с последней прод-версией:
+
+1. Определить: есть ли новый сервис?
+2. Для каждого нового сервиса проверить:
+   - Dockerfile существует?
+   - Healthcheck настроен?
+   - Порт не конфликтует?
+   - Зависимости от других сервисов (depends_on)?
+   - Требуется новая БД? (Database per Service pattern)
+   - Требуется Redis namespace?
+   - Требуется RabbitMQ queue/exchange?
+3. Сформировать задачу **PROD-SERVICE-XXX**:
+   ```
+   [PROD-SERVICE-XXX] <Новый/Изменённый> сервис: <name>
+     Порт: <port>
+     Dockerfile: EXISTS / MISSING
+     Healthcheck: CONFIGURED / MISSING
+     Зависимости: <список сервисов>
+     Требуется: <новая БД / Redis namespace / RabbitMQ queue>
+     CI/CD: НАСТРОЕН / ТРЕБУЕТСЯ → PROD-CICD-XXX
+     Nginx: ТРЕБУЕТСЯ обновление upstream / НЕ ТРЕБУЕТСЯ
+   ```
+
+**PA-006: Анализ CI/CD**
+
+Проверить изменения в `.github/workflows/`:
+
+1. Есть ли новые workflow файлы?
+2. Есть ли изменения в существующих workflow?
+3. Если добавлен новый сервис → добавить его в deploy workflow
+4. Сформировать задачу **PROD-CICD-XXX** если требуется:
+   ```
+   [PROD-CICD-XXX] CI/CD: <описание>
+     Файл: .github/workflows/<name>.yml
+     Действие: <добавить шаг / изменить step / новый workflow>
+     Сервисы: <затронутые сервисы>
+   ```
+
+**PA-007: Анализ env-переменных**
+
+Сравнить `.env.example` с `.env.production`:
+
+1. Найти новые переменные, которых нет в `.env.production`
+2. Проверить: есть ли дефолтные пароли в прод-конфигурации
+3. Для каждой новой переменной — сформировать **PROD-ENV-XXX**:
+   ```
+   [PROD-ENV-XXX] Новая env-переменная: <NAME>
+     Сервис: <service>
+     Default: <value или «требуется заполнить»>
+     Secret: YES / NO
+     Требуется ввод пользователя: YES / NO
+   ```
+
+**PA-008: Анализ зависимостей и конфигурации**
+
+1. Проверить `requirements.txt`, `package.json` — новые/удалённые зависимости
+2. Проверить конфигурационные файлы — `alembic.ini`, `next.config.*`, `tailwind.config.*`
+3. Проверить RabbitMQ топологии — новые очереди/exchanges
+4. Сформировать **PROD-CONFIG-XXX** для каждого критичного изменения:
+   ```
+   [PROD-CONFIG-XXX] Конфигурация: <описание>
+     Компонент: <RabbitMQ / Nginx / Redis / etc.>
+     Тип изменения: <новая очередь / новый upstream / etc.>
+     Детали: <описание>
+     План отката: <описание>
+   ```
+
+#### Шаблон отчёта PROD-ANALYSIS
+
+```markdown
+=== ОТЧЁТ АНАЛИЗА ПРОДАКШН-ДЕПЛОЯ ===
+
+📊 Сводка изменений:
+- Файлов изменено: [N]
+- Сервисов затронуто: [N]
+- Новых сервисов: [N]
+- Миграций БД: [N]
+- Новых env-переменных: [N]
+- CI/CD изменений: [N]
+- Конфигурационных изменений: [N]
+
+📋 Сформированные задачи:
+
+**Миграции БД:**
+[PROD-MIGRATE-001] <service>: <description> (Risk: LOW)
+[PROD-MIGRATE-002] <service>: <description> (Risk: HIGH) ⚠️
+
+**Сервисы:**
+[PROD-SERVICE-001] Новый сервис: <name> (порт: XXXX)
+[PROD-SERVICE-002] Изменён сервис: <name> (порт: XXXX)
+
+**CI/CD:**
+[PROD-CICD-001] <description>
+
+**Env-переменные:**
+[PROD-ENV-001] <NAME> = <value> (secret: YES/NO)
+
+**Конфигурация:**
+[PROD-CONFIG-001] <description>
+
+⚠️ Предупреждения:
+- [Список risk-факторов или «Нет»]
+
+✅ / ❌ Готовность к деплою: [ГОТОВ / ТРЕБУЕТСЯ ПОДГОТОВКА]
+```
+
+#### Принятие решения
+
+**Если ГОТОВ:**
+- Все PROD-MIGRATE задачи LOW risk
+- Нет новых сервисов ИЛИ новые сервисы полностью настроены
+- Нет новых env-переменных ИЛИ все заполнены
+- CI/CD актуален
+→ Спросить подтверждение пользователя → **Фаза 1**
+
+**Если ТРЕБУЕТСЯ ПОДГОТОВКА:**
+- Есть HIGH/CRITICAL миграции → нужен бэкап БД, downtime window
+- Есть новые сервисы без Dockerfile/healthcheck
+- Есть пустые env-переменные (требуют ввода пользователя)
+- CI/CD не настроен для нового сервиса
+→ Вывести отчёт, спросить пользователя:
+1. Выполнить задачи подготовки через конвейер? (→ Аналитик → Разработчик → Тестировщик → DevOps)
+2. Отложить деплой? (→ остановить, задачи сохранены)
+3. Игнорировать предупреждения? (→ ТОЛЬКО с явного согласия, отметить risk)
+
+**ЗАПРЕЩЕНО:**
+- Начинать деплой без завершённого PROD-ANALYSIS
+- Игнорировать CRITICAL проблемы (data loss, security)
+- Пропускать анализ «потому что всё понятно»
+
+---
+
+### Фаза 1 — Деплой на VPS (после завершения PROD-ANALYSIS)
 
 | Шаг | Описание | Команда / Действие |
 |-----|----------|---------------------|
 | PROD-PREP-001 | Проверить SSH доступ к VPS | `ssh user@vps "echo OK"` |
 | PROD-PREP-002 | Проверить свободное место на VPS (> 5GB) | `ssh user@vps "df -h"` |
 | PROD-PREP-003 | Проверить Docker на VPS | `ssh user@vps "docker --version && docker compose version"` |
-| PROD-PREP-004 | Проверить .env.production | Все переменные присутствуют |
+| PROD-PREP-004 | Проверить .env.production | Все переменные (по PROD-ENV задачам) |
 | PROD-BUILD-001 | Собрать production-образы | `docker compose -f docker-compose.yml build --no-cache` |
 | PROD-TRANSFER-001 | Перенести образы на VPS | Push в Registry ИЛИ rsync исходников |
 | PROD-DEPLOY-001 | Деплой на VPS | `ssh user@vps "cd /app && docker compose up -d --force-recreate"` |
-| PROD-DB-001 | Миграции БД на VPS | `ssh user@vps "cd /app && docker compose exec <svc> alembic upgrade head"` |
+| PROD-DB-001 | Миграции БД на VPS (по PROD-MIGRATE) | `ssh user@vps "cd /app && docker compose exec <svc> alembic upgrade head"` |
+| PROD-INFRA-001 | Настройка компонентов (по PROD-CONFIG) | RabbitMQ очереди, Nginx upstreams |
 | PROD-VERIFY-001 | Healthcheck всех сервисов на VPS | curl production URLs |
 | PROD-VERIFY-002 | Проверить логи VPS | `ssh user@vps "docker compose logs --tail=50"` |
 | PROD-VERIFY-003 | Проверить SSL/HTTPS | curl -k https://domain/health |
@@ -501,10 +695,10 @@ docker image prune -f
    ```bash
    ssh user@vps "cd /app && docker compose down && docker compose up -d <previous-tag>"
    ```
-4. При необходимости откатить миграции:
-   ```bash
-   ssh user@vps "cd /app && docker compose exec <service> alembic downgrade -1"
-   ```
+4. При необходимости откатить миграции (по плану PROD-MIGRATE):
+    ```bash
+    ssh user@vps "cd /app && docker compose exec <service> alembic downgrade -1"
+    ```
 
 ### Шаблон итогового отчёта Production Deploy
 
@@ -513,7 +707,11 @@ docker image prune -f
 ✅ VPS: [ip/domain] подключение OK
 ✅ Образы собраны (production, --no-cache)
 ✅ Контейнеры запущены на VPS (--force-recreate)
-✅ Миграции БД применены
+✅ Миграции БД применены (по плану PROD-ANALYSIS)
+✅ Новые сервисы развёрнуты (по плану PROD-ANALYSIS)
+✅ CI/CD обновлён (по плану PROD-ANALYSIS)
+✅ Env-переменные настроены (по плану PROD-ANALYSIS)
+✅ Инфраструктурные компоненты настроены (RabbitMQ, Nginx)
 ✅ Все сервисы healthy (production)
 ✅ SSL/HTTPS OK
 ✅ Логи без ошибок
@@ -525,6 +723,7 @@ VPS: [ip/domain]
 Production URL: [url]
 Версия: [commit hash / tag]
 Реализовано: [список TASK-XXX]
+PROD-ANALYSIS: [краткая сводка — что обнаружено и выполнено]
 🎉 Продакшн-деплой завершён успешно
 ```
 
@@ -533,3 +732,5 @@ Production URL: [url]
 *Скилл создан для управления инфраструктурой и деплоем микросервисной архитектуры DryClean Pro.*
 *Лучшие практики (BP-OPS-01 — BP-OPS-10) ОБЯЗАТЕЛЬНЫ к исполнению на КАЖДОМ деплое.*
 *Production Deploy (Этап 5) запускается по триггеру «деплой на прод» (см. AGENTS.md раздел 0.1).*
+*Фаза 0 (PROD-ANALYSIS) — ОБЯЗАТЕЛЬНЫЙ анализ изменений перед деплоем.*
+*Без завершённого PROD-ANALYSIS деплой на VPS ЗАПРЕЩЁН.*
