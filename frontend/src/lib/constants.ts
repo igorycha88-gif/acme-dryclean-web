@@ -4,8 +4,8 @@ export const CONTACTS = {
   phoneAlt: "+7 (985) 226-15-73",
   phoneAltRaw: "+79852261573",
   whatsapp: "+79852261573",
-  telegram: "@da_drycleaning",
-  telegramDirect: "https://t.me/BalovaAlena",
+  telegram: "@DADryCleaning",
+  telegramDirect: "https://t.me/DADryCleaning",
   maxDirect:
     "https://max.ru/u/f9LHodD0cOLl9VlLEQ-KMhouvsRyul_hlImvqj3X-GzUTeW3pjFv3ARaSWU",
   email: "da-drycleaning@mail.ru",
