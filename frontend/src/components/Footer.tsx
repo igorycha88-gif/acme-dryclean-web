@@ -19,7 +19,7 @@ const serviceLinks = [
 const companyLinks = [
   { label: "О компании", href: "/o-kompanii" },
   { label: "Блог", href: "/blog" },
-  { label: "Прайс-лист", href: "/price-list.pdf" },
+  { label: "Прайс-лист", href: "/price-list.pdf", external: true },
   { label: "Фото работ", href: "/foto" },
   { label: "Калькулятор", href: "/kalkulyator" },
   { label: "Отзывы", href: "/otzyvy" },
@@ -69,12 +69,23 @@ export default function Footer() {
             <ul className="space-y-2">
               {companyLinks.map((link) => (
                 <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-sm text-white/70 hover:text-white transition-colors"
-                  >
-                    {link.label}
-                  </Link>
+                  {"external" in link && link.external ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-white/70 hover:text-white transition-colors"
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className="text-sm text-white/70 hover:text-white transition-colors"
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>
