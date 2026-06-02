@@ -56,7 +56,7 @@ const nextConfig: NextConfig = {
           {
             key: "Permissions-Policy",
             value:
-              "camera=(), microphone=(), geolocation=(self: 'https://da-dryclean.ru')",
+              "camera=(), microphone=(), geolocation=(self \"https://da-dryclean.ru\")",
           },
         ],
       },
