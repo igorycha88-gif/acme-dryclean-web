@@ -61,25 +61,12 @@ function sendEvent(data: TrackEventPayload): void {
   try {
     const url = `${TRACKING_API}/api/v1/tracking/event`;
     const body = JSON.stringify(data);
-    const blob = new Blob([body], { type: "application/json" });
-    if (navigator.sendBeacon) {
-      const queued = navigator.sendBeacon(url, blob);
-      if (!queued) {
-        fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body,
-          keepalive: true,
-        }).catch(() => {});
-      }
-    } else {
-      fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
-        keepalive: true,
-      }).catch(() => {});
-    }
+    fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+      keepalive: true,
+    }).catch(() => {});
   } catch (e) {
     if (typeof console !== "undefined" && console.warn) {
       console.warn("[tracker] sendEvent failed:", e);

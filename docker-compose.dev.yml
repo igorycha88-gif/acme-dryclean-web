@@ -3,12 +3,14 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_TRACKING_API_URL: http://localhost:8020
     ports:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
       - NEXT_PUBLIC_CONTENT_API_URL=http://localhost:8011
-      - NEXT_PUBLIC_TRACKING_API_URL=http://tracking:8020
+      - NEXT_PUBLIC_TRACKING_API_URL=http://localhost:8020
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
