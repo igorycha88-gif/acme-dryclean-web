@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Length": String(buffer.byteLength),
-        "Content-Disposition": 'inline; filename="price-list.pdf"',
+        "Content-Disposition": 'attachment; filename="price-list.pdf"; filename*=UTF-8\'\'%D0%9F%D1%80%D0%B0%D0%B9%D1%81-%D0%BB%D0%B8%D1%81%D1%82-DryClean-Pro.pdf',
         "Cache-Control": "public, max-age=3600",
         "X-Request-Id": requestId,
       },
