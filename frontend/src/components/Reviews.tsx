@@ -94,7 +94,9 @@ export default function Reviews() {
 
         <div className="mt-8 flex flex-wrap justify-center items-center gap-4 text-sm">
           <a
-            href="/otzyvy"
+            href={CONTACTS.yandexMaps}
+            target="_blank"
+            rel="noopener noreferrer"
             className="text-secondary border-b border-dashed border-secondary hover:text-accent hover:border-accent transition-colors"
           >
             Все отзывы
