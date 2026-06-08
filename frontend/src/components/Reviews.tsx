@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Star, ChevronLeft, ChevronRight } from "lucide-react";
+import { Star, ChevronLeft, ChevronRight, PenLine } from "lucide-react";
 import Container from "@/components/ui/Container";
 import Section from "@/components/ui/Section";
-import { REVIEWS } from "@/lib/constants";
+import { REVIEWS, CONTACTS } from "@/lib/constants";
 
 export default function Reviews() {
   const [current, setCurrent] = useState(0);
@@ -92,7 +92,7 @@ export default function Reviews() {
           </div>
         </div>
 
-        <div className="mt-8 flex flex-wrap justify-center gap-4 text-sm">
+        <div className="mt-8 flex flex-wrap justify-center items-center gap-4 text-sm">
           <a
             href="/otzyvy"
             className="text-secondary border-b border-dashed border-secondary hover:text-accent hover:border-accent transition-colors"
@@ -100,13 +100,22 @@ export default function Reviews() {
             Все отзывы
           </a>
           <a
-            href="https://yandex.com/maps/org/drycleaning_d_a/159613944902/"
+            href={CONTACTS.yandexMaps}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1 text-secondary hover:text-accent transition-colors"
           >
             <Star size={14} className="text-warning fill-warning" />
             Рейтинг на Яндекс Картах
+          </a>
+          <a
+            href={CONTACTS.yandexMaps}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 bg-accent text-white rounded-[28px] h-10 px-6 font-[family-name:var(--font-heading)] font-semibold text-[14px] hover:shadow-[0_6px_20px_rgba(232,69,60,0.3)] hover:-translate-y-px transition-all duration-300"
+          >
+            <PenLine size={16} />
+            Оставить отзыв
           </a>
         </div>
       </Container>
