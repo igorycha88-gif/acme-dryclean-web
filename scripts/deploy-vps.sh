@@ -106,23 +106,19 @@ setup_firewall() {
 
     log "  Configuring UFW rules..."
 
-    ufw --force reset >/dev/null 2>&1
+    ufw --force reset >/dev/null 2>&1 || true
+    ufw default deny incoming >/dev/null 2>&1 || true
+    ufw default allow outgoing >/dev/null 2>&1 || true
+    ufw allow 22/tcp >/dev/null 2>&1 || true
+    ufw allow 80/tcp >/dev/null 2>&1 || true
+    ufw allow 443/tcp >/dev/null 2>&1 || true
+    ufw --force enable >/dev/null 2>&1 || true
 
-    ufw default deny incoming >/dev/null 2>&1
-    ufw default allow outgoing >/dev/null 2>&1
-
-    ufw allow 22/tcp   comment 'SSH'      >/dev/null 2>&1
-    ufw allow 80/tcp   comment 'HTTP'     >/dev/null 2>&1
-    ufw allow 443/tcp  comment 'HTTPS'    >/dev/null 2>&1
-
-    ufw --force enable >/dev/null 2>&1
-
-    log "  UFW status:"
-    ufw status numbered 2>/dev/null | tail -n +2 | while read -r line; do
-        log "    $line"
-    done
-
-    log "  UFW firewall active — only ports 22/80/443 open"
+    if ufw status 2>/dev/null | grep -q "Status: active"; then
+        log "  UFW firewall active — only ports 22/80/443 open"
+    else
+        log "  WARN: UFW not active (defense-in-depth skipped — ports are still protected by 127.0.0.1 binding)"
+    fi
 }
 
 setup_firewall
