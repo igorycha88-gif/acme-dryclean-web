@@ -533,7 +533,9 @@ DPEOF
     if command -v htpasswd &>/dev/null; then
         htpasswd -bc /etc/nginx/.htpasswd_grafana "$GRAFANA_BASIC_AUTH_USER" "$GRAFANA_BASIC_AUTH_PASSWORD" 2>/dev/null
     elif command -v openssl &>/dev/null; then
-        printf "%s:{PLAIN}%s\n" "$GRAFANA_BASIC_AUTH_USER" "$GRAFANA_BASIC_AUTH_PASSWORD" > /etc/nginx/.htpasswd_grafana
+        local _hash
+        _hash=$(openssl passwd -apr1 "$GRAFANA_BASIC_AUTH_PASSWORD")
+        printf "%s:%s\n" "$GRAFANA_BASIC_AUTH_USER" "$_hash" > /etc/nginx/.htpasswd_grafana
     else
         log "  WARN: Neither htpasswd nor openssl found — Grafana basic-auth NOT configured"
     fi
