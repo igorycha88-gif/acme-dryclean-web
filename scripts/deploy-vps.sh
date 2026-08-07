@@ -91,6 +91,42 @@ else
     fatal "Docker Compose not found"
 fi
 
+# ── Step 1.5: Firewall setup (UFW) ────────────────────────────────────────────
+
+setup_firewall() {
+    log "── Step 1.5: Firewall setup (UFW) ──"
+
+    if ! command -v ufw &>/dev/null; then
+        log "  UFW not installed — installing..."
+        apt-get update -qq && apt-get install -y -qq ufw 2>/dev/null || {
+            log "  WARN: Could not install UFW — firewall setup SKIPPED"
+            return 0
+        }
+    fi
+
+    log "  Configuring UFW rules..."
+
+    ufw --force reset >/dev/null 2>&1
+
+    ufw default deny incoming >/dev/null 2>&1
+    ufw default allow outgoing >/dev/null 2>&1
+
+    ufw allow 22/tcp   comment 'SSH'      >/dev/null 2>&1
+    ufw allow 80/tcp   comment 'HTTP'     >/dev/null 2>&1
+    ufw allow 443/tcp  comment 'HTTPS'    >/dev/null 2>&1
+
+    ufw --force enable >/dev/null 2>&1
+
+    log "  UFW status:"
+    ufw status numbered 2>/dev/null | tail -n +2 | while read -r line; do
+        log "    $line"
+    done
+
+    log "  UFW firewall active — only ports 22/80/443 open"
+}
+
+setup_firewall
+
 # ── Step 2: Database backup ──────────────────────────────────────────────────
 
 log "── Step 2: Database backup ──"
@@ -217,7 +253,7 @@ deploy_direct() {
         -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e UPLOAD_DIR=/app/uploads \
         -v dryclean_uploads:/app/uploads \
-        -p ${CONTENT_PORT}:8011 \
+        -p 127.0.0.1:${CONTENT_PORT}:8011 \
         "$CONTENT_IMAGE"
 
     if ! wait_for_health "$CONTENT_PORT" "dryclean-content" 90 "/health"; then
@@ -235,7 +271,7 @@ deploy_direct() {
         -e TRACKING_DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e TRACKING_CORS_ORIGINS='["https://da-dryclean.ru"]' \
         -e TRACKING_DEBUG=false \
-        -p ${TRACKING_PORT}:8020 \
+        -p 127.0.0.1:${TRACKING_PORT}:8020 \
         "$TRACKING_IMAGE"
 
     if ! wait_for_health "$TRACKING_PORT" "dryclean-tracking" 60 "/health"; then
@@ -252,7 +288,7 @@ deploy_direct() {
         --restart unless-stopped \
         -e NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-/api}" \
         -e NEXT_PUBLIC_CONTENT_API_URL="${NEXT_PUBLIC_CONTENT_API_URL:-/api/content}" \
-        -p ${FRONTEND_PORT}:3000 \
+        -p 127.0.0.1:${FRONTEND_PORT}:3000 \
         "$FRONTEND_IMAGE"
 
     if ! wait_for_health "$FRONTEND_PORT" "dryclean-frontend" 60 "/"; then
@@ -285,7 +321,7 @@ deploy_blue_green() {
         -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e UPLOAD_DIR=/app/uploads \
         -v dryclean_uploads:/app/uploads \
-        -p ${GREEN_CONTENT_PORT}:8011 \
+        -p 127.0.0.1:${GREEN_CONTENT_PORT}:8011 \
         "$CONTENT_IMAGE"
 
     if ! wait_for_health "$GREEN_CONTENT_PORT" "dryclean-content-green" 120 "/health"; then
@@ -302,7 +338,7 @@ deploy_blue_green() {
         --restart no \
         -e NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-/api}" \
         -e NEXT_PUBLIC_CONTENT_API_URL="${NEXT_PUBLIC_CONTENT_API_URL:-/api/content}" \
-        -p ${GREEN_FRONTEND_PORT}:3000 \
+        -p 127.0.0.1:${GREEN_FRONTEND_PORT}:3000 \
         "$FRONTEND_IMAGE"
 
     sleep 5
@@ -333,7 +369,7 @@ EOF
         -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e UPLOAD_DIR=/app/uploads \
         -v dryclean_uploads:/app/uploads \
-        -p ${CONTENT_PORT}:8011 \
+        -p 127.0.0.1:${CONTENT_PORT}:8011 \
         "$CONTENT_IMAGE"
 
     if ! wait_for_health "$CONTENT_PORT" "dryclean-content" 90 "/health"; then
@@ -352,7 +388,7 @@ EOF
         -e TRACKING_DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e TRACKING_CORS_ORIGINS='["https://da-dryclean.ru"]' \
         -e TRACKING_DEBUG=false \
-        -p ${TRACKING_PORT}:8020 \
+        -p 127.0.0.1:${TRACKING_PORT}:8020 \
         "$TRACKING_IMAGE"
 
     if ! wait_for_health "$TRACKING_PORT" "dryclean-tracking" 60 "/health"; then
@@ -369,7 +405,7 @@ EOF
         --restart unless-stopped \
         -e NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-/api}" \
         -e NEXT_PUBLIC_CONTENT_API_URL="${NEXT_PUBLIC_CONTENT_API_URL:-/api/content}" \
-        -p ${FRONTEND_PORT}:3000 \
+        -p 127.0.0.1:${FRONTEND_PORT}:3000 \
         "$FRONTEND_IMAGE"
 
     sleep 5
@@ -495,7 +531,7 @@ DPEOF
         --name dryclean-prometheus \
         --network dryclean-net \
         --restart unless-stopped \
-        -p ${PROMETHEUS_PORT}:9090 \
+        -p 127.0.0.1:${PROMETHEUS_PORT}:9090 \
         -v "$MONITORING_DIR/prometheus.yml:/etc/prometheus/prometheus.yml:ro" \
         -v dryclean_prometheus:/prometheus \
         prom/prometheus:v2.53.0 \
@@ -512,8 +548,20 @@ DPEOF
     fi
 
     GRAFANA_ADMIN_PASSWORD="${GRAFANA_ADMIN_PASSWORD:-dryclean2026}"
+    GRAFANA_BASIC_AUTH_USER="${GRAFANA_BASIC_AUTH_USER:-admin}"
+    GRAFANA_BASIC_AUTH_PASSWORD="${GRAFANA_BASIC_AUTH_PASSWORD:-${GRAFANA_ADMIN_PASSWORD}}"
 
-    log "  Starting Grafana on port ${GRAFANA_PORT}..."
+    log "  Generating nginx basic-auth for Grafana..."
+    if command -v htpasswd &>/dev/null; then
+        htpasswd -bc /etc/nginx/.htpasswd_grafana "$GRAFANA_BASIC_AUTH_USER" "$GRAFANA_BASIC_AUTH_PASSWORD" 2>/dev/null
+    elif command -v openssl &>/dev/null; then
+        printf "%s:{PLAIN}%s\n" "$GRAFANA_BASIC_AUTH_USER" "$GRAFANA_BASIC_AUTH_PASSWORD" > /etc/nginx/.htpasswd_grafana
+    else
+        log "  WARN: Neither htpasswd nor openssl found — Grafana basic-auth NOT configured"
+    fi
+    nginx -t 2>&1 && nginx -s reload 2>&1 || log "  WARN: nginx reload failed"
+
+    log "  Starting Grafana on port ${GRAFANA_PORT} (behind nginx /grafana/)..."
     docker run -d \
         --name dryclean-grafana \
         --network dryclean-net \
@@ -521,17 +569,19 @@ DPEOF
         -e GF_SECURITY_ADMIN_USER=admin \
         -e "GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}" \
         -e GF_AUTH_ANONYMOUS_ENABLED=false \
+        -e GF_SERVER_ROOT_URL="https://da-dryclean.ru/grafana/" \
+        -e GF_SERVER_SERVE_FROM_SUB_PATH=true \
         -v dryclean_grafana:/var/lib/grafana \
         -v "$MONITORING_DIR/grafana/provisioning:/etc/grafana/provisioning:ro" \
         -v "$MONITORING_DIR/grafana/dashboards:/var/lib/grafana/dashboards:ro" \
-        -p ${GRAFANA_PORT}:3000 \
+        -p 127.0.0.1:${GRAFANA_PORT}:3000 \
         grafana/grafana:11.1.0
 
     if ! wait_for_health "$GRAFANA_PORT" "dryclean-grafana" 60 "/api/health"; then
         log "  WARN: Grafana health check timeout"
         sleep 3
     else
-        log "  Grafana is healthy (admin panel at http://<VPS_IP>:${GRAFANA_PORT})"
+        log "  Grafana is healthy (accessible at https://da-dryclean.ru/grafana/)"
     fi
 }
 
@@ -582,7 +632,7 @@ if [ "$SMOKE_FAIL" -gt 0 ]; then
             -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
             -e UPLOAD_DIR=/app/uploads \
             -v dryclean_uploads:/app/uploads \
-            -p ${CONTENT_PORT}:8011 \
+            -p 127.0.0.1:${CONTENT_PORT}:8011 \
             "$PREVIOUS_CONTENT"
 
         docker run -d \
@@ -591,7 +641,7 @@ if [ "$SMOKE_FAIL" -gt 0 ]; then
             --restart unless-stopped \
             -e NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-/api}" \
             -e NEXT_PUBLIC_CONTENT_API_URL="${NEXT_PUBLIC_CONTENT_API_URL:-/api/content}" \
-            -p ${FRONTEND_PORT}:3000 \
+            -p 127.0.0.1:${FRONTEND_PORT}:3000 \
             "$PREVIOUS_FRONTEND"
 
         sleep 10
