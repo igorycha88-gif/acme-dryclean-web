@@ -91,37 +91,19 @@ else
     fatal "Docker Compose not found"
 fi
 
-# ── Step 1.5: Firewall setup (UFW) ────────────────────────────────────────────
+# ── Step 1.5: Ensure firewall does NOT lock out SSH ──────────────────────────
+# UFW causes lockouts on this VPS — disable it if active.
+# Port security is handled by binding Docker ports to 127.0.0.1 (see -p flags).
 
-setup_firewall() {
-    log "── Step 1.5: Firewall setup (UFW) ──"
-
-    if ! command -v ufw &>/dev/null; then
-        log "  UFW not installed — installing..."
-        apt-get update -qq && apt-get install -y -qq ufw 2>/dev/null || {
-            log "  WARN: Could not install UFW — firewall setup SKIPPED"
-            return 0
-        }
-    fi
-
-    log "  Configuring UFW rules..."
-
-    ufw --force reset >/dev/null 2>&1 || true
-    ufw default deny incoming >/dev/null 2>&1 || true
-    ufw default allow outgoing >/dev/null 2>&1 || true
-    ufw allow 22/tcp >/dev/null 2>&1 || true
-    ufw allow 80/tcp >/dev/null 2>&1 || true
-    ufw allow 443/tcp >/dev/null 2>&1 || true
-    ufw --force enable >/dev/null 2>&1 || true
-
+if command -v ufw &>/dev/null; then
     if ufw status 2>/dev/null | grep -q "Status: active"; then
-        log "  UFW firewall active — only ports 22/80/443 open"
+        log "── Step 1.5: Disabling UFW (unsafe on this VPS) ──"
+        ufw --force disable >/dev/null 2>&1 || true
+        log "  UFW disabled — ports protected by 127.0.0.1 binding"
     else
-        log "  WARN: UFW not active (defense-in-depth skipped — ports are still protected by 127.0.0.1 binding)"
+        log "── Step 1.5: UFW inactive (OK) — ports protected by 127.0.0.1 binding ──"
     fi
-}
-
-setup_firewall
+fi
 
 # ── Step 2: Database backup ──────────────────────────────────────────────────
 
