@@ -34,6 +34,20 @@ export interface LocalBusinessJsonLd {
     reviewCount: string;
     bestRating: string;
   };
+  review: Array<{
+    "@type": string;
+    author: {
+      "@type": string;
+      name: string;
+    };
+    datePublished: string;
+    reviewBody: string;
+    reviewRating: {
+      "@type": string;
+      ratingValue: string;
+      bestRating: string;
+    };
+  }>;
   sameAs: string[];
   hasOfferCatalog: {
     "@type": string;
@@ -83,6 +97,20 @@ export function generateLocalBusinessJsonLd(): LocalBusinessJsonLd {
       reviewCount: "5000",
       bestRating: "5",
     },
+    review: REVIEWS.map((review) => ({
+      "@type": "Review",
+      author: {
+        "@type": "Person",
+        name: review.author,
+      },
+      datePublished: "2024-01-01",
+      reviewBody: review.text,
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: String(review.rating),
+        bestRating: "5",
+      },
+    })),
     sameAs: [
       `https://wa.me/${CONTACTS.whatsapp}`,
       `https://t.me/${CONTACTS.telegram.replace("@", "")}`,
@@ -209,54 +237,6 @@ export function generateBreadcrumbJsonLd(
       position: index + 1,
       name: item.name,
       item: item.url.startsWith("http") ? item.url : `${SITE_URL}${item.url}`,
-    })),
-  };
-}
-
-export interface ReviewJsonLd {
-  "@context": string;
-  "@type": string;
-  itemReviewed: {
-    "@type": string;
-    name: string;
-  };
-  review: Array<{
-    "@type": string;
-    author: {
-      "@type": string;
-      name: string;
-    };
-    datePublished: string;
-    reviewBody: string;
-    reviewRating: {
-      "@type": string;
-      ratingValue: string;
-      bestRating: string;
-    };
-  }>;
-}
-
-export function generateReviewsJsonLd(): ReviewJsonLd {
-  return {
-    "@context": "https://schema.org",
-    "@type": "ItemList",
-    itemReviewed: {
-      "@type": "LocalBusiness",
-      name: "D&A Dry Cleaning",
-    },
-    review: REVIEWS.map((review) => ({
-      "@type": "Review",
-      author: {
-        "@type": "Person",
-        name: review.author,
-      },
-      datePublished: "2024-01-01",
-      reviewBody: review.text,
-      reviewRating: {
-        "@type": "Rating",
-        ratingValue: String(review.rating),
-        bestRating: "5",
-      },
     })),
   };
 }
