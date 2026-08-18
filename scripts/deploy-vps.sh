@@ -73,6 +73,24 @@ log "── Step 1: Pre-flight checks ──"
 [ -f .env ] || fatal ".env not found in $APP_DIR"
 source .env
 
+# ── Step 1.1: Docker image cleanup (before disk gate) ────────────────────────
+# Old deploys accumulate ghcr images; end-of-deploy cleanup never runs when
+# disk is already full. Prune early so regular deploys do not stall.
+
+if command -v docker &>/dev/null; then
+    log "── Step 1.1: Docker image cleanup ──"
+    docker image prune -f >/dev/null 2>&1 || true
+    KEEP_IMAGES_EARLY=4
+    OLD_IMAGES=$(docker images --format "{{.Repository}}:{{.Tag}}" 2>/dev/null | grep -E "ghcr.io.*dryclean" | grep -v "<none>" || true)
+    if [ -n "$OLD_IMAGES" ]; then
+        echo "$OLD_IMAGES" | tail -n +$((KEEP_IMAGES_EARLY + 1)) | while read -r img; do
+            docker rmi "$img" >/dev/null 2>&1 || true
+        done
+        docker image prune -f >/dev/null 2>&1 || true
+    fi
+    log "  Disk after cleanup: $(df -m "$APP_DIR" | tail -1 | awk '{print $4}')MB free"
+fi
+
 DISK_FREE=$(df -m "$APP_DIR" | tail -1 | awk '{print $4}')
 if [ "$DISK_FREE" -lt 1024 ]; then
     fatal "Insufficient disk space: ${DISK_FREE}MB free (need 1GB)"
