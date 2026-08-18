@@ -17,6 +17,9 @@ class Settings(BaseSettings):
 
     session_timeout_minutes: int = 30
 
+    business_metrics_enabled: bool = True
+    business_metrics_interval_seconds: int = 60
+
     geoip_db_path: str = "/app/GeoLite2-City.mmdb"
 
     sentry_dsn: str | None = None

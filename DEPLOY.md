@@ -192,3 +192,37 @@ nginx -s reload
 cd /opt/app && ./scripts/cleanup.sh --keep 2
 docker system prune -f
 ```
+
+## Metrics export for external monitoring
+
+Central monitoring (project «Мониторинг сайтов») scrapes business and service
+metrics over HTTPS only, authenticated by the `X-Monitoring-Key` header.
+No new ports are exposed: everything goes through nginx :443.
+
+```
+GET https://da-dryclean.ru/metrics/tracking   → 127.0.0.1:8020  (business gauges)
+GET https://da-dryclean.ru/metrics/content    → $content_upstream (blue-green aware)
+GET https://da-dryclean.ru/metrics/node       → 127.0.0.1:9100  (node_exporter)
+GET https://da-dryclean.ru/metrics/postgres   → 127.0.0.1:9187  (postgres_exporter)
+```
+
+### One-time setup on the VPS
+
+```bash
+ssh root@37.143.15.148
+cd /opt/app && git pull
+./scripts/setup-metrics-export.sh --key <MONITORING_API_KEY>
+```
+
+The script (idempotent):
+- writes `/etc/nginx/conf.d/monitoring-key.conf` (map + rate limit zone, chmod 600 root:root)
+- ensures the 4 `/metrics/*` locations exist in `/etc/nginx/nginx.conf`, runs `nginx -t`, reloads
+- stores `MONITORING_API_KEY` in `/opt/app/.env` (600)
+- installs node_exporter as a systemd service bound to 127.0.0.1:9100
+- creates read-only user `metrics_exporter` (pg_monitor) and starts
+  `dryclean-postgres-exporter` container on 127.0.0.1:9187
+- runs acceptance checks (403 without key, 200 + expected metric names with key, POST → 405)
+
+The monitoring key and `POSTGRES_EXPORTER_PASSWORD` must never be committed.
+`/metrics/content` follows the active blue-green environment automatically
+(existing `map $active_env $content_upstream`).

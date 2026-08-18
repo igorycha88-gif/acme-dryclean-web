@@ -15,7 +15,6 @@ import FAQ from "@/components/FAQ";
 import Footer from "@/components/Footer";
 import {
   generateLocalBusinessJsonLd,
-  generateReviewsJsonLd,
   generateFAQPageJsonLd,
   generateBreadcrumbJsonLd,
 } from "@/lib/structuredData";
@@ -35,7 +34,6 @@ export const metadata: Metadata = {
 
 export default function Home() {
   const localBusinessJsonLd = generateLocalBusinessJsonLd();
-  const reviewsJsonLd = generateReviewsJsonLd();
   const faqJsonLd = generateFAQPageJsonLd(FAQ_ITEMS);
   const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { name: "Главная", url: "/" },
@@ -48,13 +46,6 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(localBusinessJsonLd),
-        }}
-      />
-      <Script
-        id="structured-data-reviews"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(reviewsJsonLd),
         }}
       />
       <Script

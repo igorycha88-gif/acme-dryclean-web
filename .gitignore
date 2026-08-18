@@ -13,3 +13,12 @@ build/
 out/
 .pnp
 .pnp.*
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.coverage
+.pytest_cache/
+backend/services/tracking/test_tracking.db
+*.egg-info/
