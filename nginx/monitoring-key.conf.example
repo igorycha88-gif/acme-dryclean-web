@@ -1,0 +1,14 @@
+# Template for /etc/nginx/conf.d/monitoring-key.conf on the VPS.
+# The real file is created by scripts/setup-metrics-export.sh (or manually):
+#   - owner root:root, chmod 600
+#   - contains the X-Monitoring-Key value used by the central monitoring project
+# The key value must NEVER be committed to the repository.
+
+# BEGIN metrics-export (managed block)
+map $http_x_monitoring_key $metrics_key_ok {
+    default 0;
+    "<MONITORING_API_KEY>" 1;
+}
+
+limit_req_zone $binary_remote_addr zone=metrics_limit:10m rate=10r/s;
+# END metrics-export (managed block)

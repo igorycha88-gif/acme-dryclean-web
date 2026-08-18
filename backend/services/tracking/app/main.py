@@ -1,4 +1,5 @@
-from contextlib import asynccontextmanager
+import asyncio
+from contextlib import asynccontextmanager, suppress
 
 import structlog
 from fastapi import FastAPI
@@ -10,6 +11,7 @@ from slowapi.util import get_remote_address
 from app.api.v1.router import router as v1_router
 from app.config import settings
 from app.core.metrics import setup_metrics
+from app.tasks.business_metrics import business_metrics_loop
 
 logger = structlog.get_logger()
 structlog.configure(
@@ -31,7 +33,14 @@ limiter = Limiter(key_func=get_remote_address, default_limits=[f"{settings.rate_
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("tracking_service_started", version=settings.app_version)
+    metrics_task = None
+    if settings.business_metrics_enabled:
+        metrics_task = asyncio.create_task(business_metrics_loop())
     yield
+    if metrics_task is not None:
+        metrics_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await metrics_task
     logger.info("tracking_service_stopped")
 
 
@@ -42,7 +51,7 @@ app = FastAPI(
 )
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 app.add_middleware(
     CORSMiddleware,

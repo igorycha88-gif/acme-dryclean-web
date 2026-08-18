@@ -109,7 +109,7 @@ services:
       blue-net:
         ipv4_address: 172.26.0.50
     ports:
-      - "8011:8011"
+      - "127.0.0.1:8011:8011"
     environment:
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@172.26.0.20:5432/${POSTGRES_DB:-dryclean_content}
       - DATABASE_URL_SYNC=postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@172.26.0.20:5432/${POSTGRES_DB:-dryclean_content}

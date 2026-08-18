@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1 import api_router
 from app.config import settings
+from app.core.metrics import setup_metrics
 from app.database import engine
 from app.models.models import Base
 
@@ -55,6 +56,8 @@ async def health_check():
 
 
 app.include_router(api_router)
+
+setup_metrics(app)
 
 
 @app.get("/")
