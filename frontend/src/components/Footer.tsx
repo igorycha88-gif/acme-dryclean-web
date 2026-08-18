@@ -19,7 +19,7 @@ const serviceLinks = [
 const companyLinks = [
   { label: "О компании", href: "/o-kompanii" },
   { label: "Блог", href: "/blog" },
-  { label: "Прайс-лист", href: "/api/price-list", download: true },
+  { label: "Прайс-лист", href: "/price-list.pdf", download: true },
   { label: "Фото работ", href: "/foto" },
   { label: "Калькулятор", href: "/kalkulyator" },
   { label: "Отзывы", href: "/otzyvy" },
