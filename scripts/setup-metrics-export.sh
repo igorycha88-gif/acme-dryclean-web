@@ -267,11 +267,13 @@ if [ -z "${SKIP_VERIFY:-}" ]; then
     sleep 3
     curl -s -o /dev/null --max-time 10 "https://$DOMAIN/api/__metrics_warmup" || true
 
-    # retry wrapper: nginx reload worker overlap can transiently 404
+    # retry wrapper: nginx reload worker overlap can transiently 404.
+    # pipefail is disabled inside: grep -q exits on first match and SIGPIPEs
+    # curl on responses larger than the 64KB pipe buffer (node_exporter ~85KB).
     check() {
         local desc="$1" expect="$2" cmd="$3" attempt
         for attempt in 1 2 3; do
-            if eval "$cmd" >/dev/null 2>&1; then
+            if ( set +o pipefail; eval "$cmd" ) >/dev/null 2>&1; then
                 log "  OK: $desc"
                 return 0
             fi
