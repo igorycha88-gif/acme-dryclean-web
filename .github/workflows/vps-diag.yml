@@ -20,20 +20,5 @@ jobs:
           script_stop: false
           command_timeout: 3m
           script: |
-            echo "=== key in .env ==="
-            grep -c "^MONITORING_API_KEY=" /opt/app/.env 2>/dev/null || echo "0"
-            echo "=== nginx: metrics locations in /etc/nginx/nginx.conf ==="
-            grep -c "location = /metrics/" /etc/nginx/nginx.conf 2>/dev/null || echo "0"
-            echo "=== monitoring-key.conf ==="
-            ls -la /etc/nginx/conf.d/monitoring-key.conf 2>/dev/null || echo "absent"
-            echo "=== nginx includes ==="
-            grep -n "include.*conf.d" /etc/nginx/nginx.conf 2>/dev/null || echo "no conf.d include"
-            echo "=== node_exporter ==="
-            systemctl is-active node_exporter 2>/dev/null || echo "inactive/absent"
-            echo "=== postgres-exporter container ==="
-            docker ps --format '{{.Names}}' 2>/dev/null | grep postgres-exporter || echo "absent"
-            echo "=== setup script on VPS ==="
-            ls -la /opt/app/scripts/setup-metrics-export.sh 2>/dev/null || echo "absent"
-            echo "=== exporters local check ==="
-            curl -s -o /dev/null -w "9100/node: %{http_code}\n" --max-time 3 http://127.0.0.1:9100/metrics || true
-            curl -s -o /dev/null -w "9187/pg: %{http_code}\n" --max-time 3 http://127.0.0.1:9187/metrics || true
+            echo "=== nginx.conf structure ==="
+            grep -n "server_name\|map \|include\|location = \|upstream\|http {" /etc/nginx/nginx.conf | head -40
