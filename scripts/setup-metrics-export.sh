@@ -42,6 +42,8 @@ if [ -z "${SKIP_NGINX:-}" ]; then
 
     cat > "$NGINX_KEY_CONF" <<EOF
 # managed by scripts/setup-metrics-export.sh — DO NOT COMMIT
+# 48-hex-char keys exceed the default 64-byte map hash bucket
+map_hash_bucket_size 128;
 map \$http_x_monitoring_key \$metrics_key_ok {
     default 0;
     "$KEY" 1;

@@ -5,6 +5,8 @@
 # The key value must NEVER be committed to the repository.
 
 # BEGIN metrics-export (managed block)
+# 48-hex-char keys exceed the default 64-byte map hash bucket
+map_hash_bucket_size 128;
 map $http_x_monitoring_key $metrics_key_ok {
     default 0;
     "<MONITORING_API_KEY>" 1;
