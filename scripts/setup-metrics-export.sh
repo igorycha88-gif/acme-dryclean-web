@@ -258,14 +258,26 @@ if [ -z "${SKIP_VERIFY:-}" ]; then
     log "── acceptance verification via https://$DOMAIN ──"
     FAIL=0
 
+    # Give old nginx workers (pre-reload, without metrics locations) time to
+    # drain their keepalive connections, and warm the content service counter
+    # series: prometheus_client emits no labeled series before the first
+    # increment, and /metrics + /health are excluded from the middleware.
+    sleep 3
+    curl -s -o /dev/null --max-time 10 "https://$DOMAIN/api/__metrics_warmup" || true
+
+    # retry wrapper: nginx reload worker overlap can transiently 404
     check() {
-        local desc="$1" expect="$2" cmd="$3"
-        if eval "$cmd" >/dev/null 2>&1; then
-            log "  OK: $desc"
-        else
-            log "  FAIL: $desc (expected $expect)"
-            FAIL=$((FAIL + 1))
-        fi
+        local desc="$1" expect="$2" cmd="$3" attempt
+        for attempt in 1 2 3; do
+            if eval "$cmd" >/dev/null 2>&1; then
+                log "  OK: $desc"
+                return 0
+            fi
+            log "  attempt $attempt/3 failed: $desc (expected $expect), retrying..."
+            sleep 3
+        done
+        log "  FAIL: $desc (expected $expect)"
+        FAIL=$((FAIL + 1))
     }
 
     check "no key -> 403 (tracking)" 403 \
