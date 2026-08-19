@@ -1,8 +1,25 @@
+# ⚠️ Ядро VPS 5.2.0 не поддерживает iptables nat → embedded DNS Docker
+# (127.0.0.11) НЕ РАБОТАЕТ. Межконтейнерные обращения — по статическим IP
+# (dryclean-net 172.22.0.0/16) / extra_hosts, НЕ по именам сервисов.
+# См. требования/ЧТЗ_Фикс_Docker_DNS_VPS.md и DEPLOY.md → «Ограничение DNS».
+#
+# Сеть dryclean-net — external: она создаётся scripts/deploy-vps.sh
+# (docker network create --subnet 172.22.0.0/16 dryclean-net) и используется
+# docker-run контейнерами. На чистой машине создайте её вручную перед up.
+# Воспроизведение exporter'а рядом с docker-run стеком:
+#   docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate postgres-exporter
+networks:
+  dryclean-net:
+    name: dryclean-net
+    external: true
+
 services:
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    networks:
+      - dryclean-net
     expose:
       - "3000"
     environment:
@@ -14,6 +31,10 @@ services:
 
   postgres:
     image: postgres:16
+    container_name: dryclean-postgres
+    networks:
+      dryclean-net:
+        ipv4_address: 172.22.0.3
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-dryclean}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dryclean_prod}
@@ -29,6 +50,8 @@ services:
 
   redis:
     image: redis:7
+    networks:
+      - dryclean-net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -38,6 +61,8 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management
+    networks:
+      - dryclean-net
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-dryclean}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:-dryclean_prod}
@@ -52,6 +77,9 @@ services:
     build:
       context: ./backend/services/content
       dockerfile: Dockerfile
+    networks:
+      dryclean-net:
+        ipv4_address: 172.22.0.2
     expose:
       - "8011"
     environment:
@@ -71,21 +99,33 @@ services:
       retries: 3
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      # embedded DNS сломан ядром VPS — резолвим postgres статикой (TASK-DNS-1)
+      - "postgres:172.22.0.3"
+      - "dryclean-postgres:172.22.0.3"
 
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: dryclean-postgres-exporter
+    networks:
+      dryclean-net:
+        ipv4_address: 172.22.0.5
     restart: unless-stopped
     environment:
       DATA_SOURCE_NAME: postgresql://metrics_exporter:${POSTGRES_EXPORTER_PASSWORD}@postgres:5432/${POSTGRES_DB:-dryclean_content}?sslmode=disable
     ports:
       - "127.0.0.1:9187:9187"
+    extra_hosts:
+      # embedded DNS сломан ядром VPS — резолвим postgres статикой (TASK-DNS-1)
+      - "postgres:172.22.0.3"
+      - "dryclean-postgres:172.22.0.3"
     depends_on:
       postgres:
         condition: service_healthy
 
   nginx:
     image: nginx:alpine
+    networks:
+      - dryclean-net
     ports:
       - "80:80"
       - "443:443"
@@ -101,6 +141,8 @@ services:
 
   certbot:
     image: certbot/certbot
+    networks:
+      - dryclean-net
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/lib/letsencrypt

@@ -165,6 +165,76 @@ curl -s https://da-dryclean.ru/active-env
 
 ## Troubleshooting
 
+### ⚠️ Известное ограничение: embedded DNS Docker не работает (ядро VPS)
+
+Кастомное ядро VPS `5.2.0 #1 SMP` не поддерживает iptables-nat ни в одном режиме
+(`CHAIN_ADD failed`, `modprobe nf_nat → Module not found`). Из-за этого embedded
+DNS Docker (`127.0.0.11:53`) не работает: **контейнеры не могут обращаться друг к
+другу по имени**. Полный разбор: `требования/ЧТЗ_Фикс_Docker_DNS_VPS.md`.
+
+**Воркараунд (применён, обязателен до обновления ядра):**
+
+- Сеть `dryclean-net` создаётся с фиксированной подсетью `172.22.0.0/16`.
+- Статические IP: `postgres 172.22.0.3`, `content 172.22.0.2`,
+  `tracking 172.22.0.4`, `postgres-exporter 172.22.0.5`, `frontend 172.22.0.10`.
+- `extra_hosts` в compose-файлах резолвит `postgres` → `172.22.0.3`.
+- Blue/green-окружения используют свои подсети: blue `172.26.0.0/16`,
+  green `172.27.0.0/16` — там тоже только IP, без имён.
+
+**ЗАПРЕЩЕНО до обновления ядра:** запускать новые контейнеры, которые ходят в
+postgres/redis/rabbitmq **по имени сервиса**. Только статические IP или
+`extra_hosts`. Перезапуск `dryclean-postgres`/`tracking`/`content` — только
+через `scripts/deploy-vps.sh` (он проставляет IP).
+
+**Постоянное решение (TASK-DNS-3):** обновление ядра VPS —
+`scripts/fix-vps-kernel.sh` (диагностика → `--install` → reboot → `--verify`).
+Если ядро управляется хостером и не обновляется — ограничение фиксируется
+документацией (этот раздел), воркараунд остаётся постоянно.
+
+### Применение фикса DNS на VPS (одноразово, окно обслуживания)
+
+Чтобы postgres навсегда закрепил 172.22.0.3 (сейчас IP динамический — после
+ребута VPS exporter может отваливаться), один раз пересоздайте стек:
+
+```bash
+ssh root@37.143.15.148
+cd /opt/app && git pull
+
+# 1. Остановить blue-стек (дауннтайм ~2-4 мин, БД и volume сохраняются)
+docker stop dryclean-frontend dryclean-content dryclean-tracking
+
+# 2. Полный редеплой: deploy-vps.sh увидит blue unhealthy →
+#    пересоздаст сеть с подсетью 172.22.0.0/16 и все контейнеры со статическими IP
+bash scripts/deploy-vps.sh
+
+# 3. Пересоздать exporter на статическом IP 172.22.0.5 (extra_hosts по факту)
+bash scripts/setup-metrics-export.sh --key "$(grep ^MONITORING_API_KEY= .env | cut -d= -f2-)"
+
+# 4. Регресс-проверка (FAIL=0 обязательно)
+bash scripts/check-dns.sh
+```
+
+После этого рестарт docker/VPS не ломает связность: все контейнеры имеют
+`--restart unless-stopped` + фиксированные IP.
+
+### Регресс-проверка DNS/метрик БД (после каждого деплоя)
+
+```bash
+cd /opt/app && git pull
+./scripts/check-dns.sh          # сеть, статические IP, extra_hosts, pg_up, /metrics/postgres
+# после обновления ядра:
+./scripts/check-dns.sh --strict # embedded DNS обязателен
+```
+
+Чек-лист после любого инфраструктурного изменения (рестарт docker, правки
+сети, деплой):
+
+```bash
+docker run --rm --network dryclean-net busybox nslookup dryclean-postgres   # информативно (до фикса ядра — FAIL, это норма)
+./scripts/check-dns.sh                                                     # FAIL=0 обязательно
+curl -s -H "X-Monitoring-Key: $KEY" https://da-dryclean.ru/metrics/postgres | grep '^pg_up 1'
+```
+
 ### Health-check not passing
 
 ```bash

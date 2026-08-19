@@ -200,6 +200,7 @@ deploy_direct() {
 
     docker rm -f dryclean-frontend dryclean-content dryclean-postgres \
         dryclean-redis dryclean-tracking dryclean-prometheus dryclean-grafana \
+        dryclean-postgres-exporter \
         dryclean-frontend-green dryclean-content-green dryclean-tracking-green \
         frontend-blue content-blue tracking-blue postgres-blue \
         2>/dev/null || true
@@ -223,11 +224,13 @@ deploy_direct() {
     done
 
     docker network rm dryclean-net 2>/dev/null || true
-    docker network create dryclean-net 2>/dev/null || true
+    docker network create --subnet 172.22.0.0/16 dryclean-net 2>/dev/null || true
 
     docker run -d \
         --name dryclean-postgres \
         --network dryclean-net \
+        --network-alias postgres \
+        --ip 172.22.0.3 \
         --restart unless-stopped \
         -e POSTGRES_USER="${POSTGRES_USER:-dryclean}" \
         -e POSTGRES_PASSWORD="${POSTGRES_PASSWORD}" \
@@ -257,6 +260,7 @@ deploy_direct() {
     docker run -d \
         --name dryclean-content \
         --network dryclean-net \
+        --ip 172.22.0.2 \
         --restart unless-stopped \
         -e DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
@@ -275,6 +279,7 @@ deploy_direct() {
         --name dryclean-tracking \
         --network dryclean-net \
         --network-alias tracking-blue \
+        --ip 172.22.0.4 \
         --restart unless-stopped \
         -e TRACKING_DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e TRACKING_DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
@@ -294,6 +299,7 @@ deploy_direct() {
     docker run -d \
         --name dryclean-frontend \
         --network dryclean-net \
+        --ip 172.22.0.10 \
         --restart unless-stopped \
         -e NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-/api}" \
         -e NEXT_PUBLIC_CONTENT_API_URL="${NEXT_PUBLIC_CONTENT_API_URL:-/api/content}" \
@@ -325,6 +331,7 @@ deploy_blue_green() {
     docker run -d \
         --name dryclean-content-green \
         --network dryclean-net \
+        --ip 172.22.0.12 \
         --restart no \
         -e DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
@@ -344,6 +351,7 @@ deploy_blue_green() {
     docker run -d \
         --name dryclean-frontend-green \
         --network dryclean-net \
+        --ip 172.22.0.11 \
         --restart no \
         -e NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-/api}" \
         -e NEXT_PUBLIC_CONTENT_API_URL="${NEXT_PUBLIC_CONTENT_API_URL:-/api/content}" \
@@ -373,6 +381,7 @@ EOF
     docker run -d \
         --name dryclean-content \
         --network dryclean-net \
+        --ip 172.22.0.2 \
         --restart unless-stopped \
         -e DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
@@ -392,6 +401,7 @@ EOF
         --name dryclean-tracking \
         --network dryclean-net \
         --network-alias tracking-blue \
+        --ip 172.22.0.4 \
         --restart unless-stopped \
         -e TRACKING_DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
         -e TRACKING_DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
@@ -411,6 +421,7 @@ EOF
     docker run -d \
         --name dryclean-frontend \
         --network dryclean-net \
+        --ip 172.22.0.10 \
         --restart unless-stopped \
         -e NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-/api}" \
         -e NEXT_PUBLIC_CONTENT_API_URL="${NEXT_PUBLIC_CONTENT_API_URL:-/api/content}" \
@@ -435,7 +446,25 @@ EOF
 
 # ── Execute deploy ──
 
-docker network create dryclean-net 2>/dev/null || true
+# Сеть с фиксированной подсетью: embedded DNS сломан ядром VPS (5.2.0),
+# межконтейнерная связность держится на статических IP (ЧТЗ_Фикс_Docker_DNS_VPS):
+#   postgres 172.22.0.3, content 172.22.0.2, tracking 172.22.0.4,
+#   postgres-exporter 172.22.0.5, frontend 172.22.0.10,
+#   green: frontend 172.22.0.11, content 172.22.0.12 (tracking .14 — зарезервировано)
+ensure_network() {
+    if docker network inspect dryclean-net &>/dev/null; then
+        if docker network inspect dryclean-net --format '{{range .IPAM.Config}}{{.Subnet}}{{end}}' | grep -q '172.22.0.0/16'; then
+            log "  Network dryclean-net OK (172.22.0.0/16)"
+        else
+            log "  WARN: dryclean-net exists with другой подсетью — статические IP могут не примениться"
+            log " WARN: выполните scripts/check-dns.sh --migrate-network в окне обслуживания"
+        fi
+    else
+        docker network create --subnet 172.22.0.0/16 dryclean-net
+        log "  Network dryclean-net created (172.22.0.0/16)"
+    fi
+}
+ensure_network
 
 if [ "$BLUE_HEALTHY" -eq 1 ]; then
     deploy_blue_green
@@ -453,28 +482,89 @@ setup_monitoring() {
     mkdir -p "$MONITORING_DIR/grafana/provisioning/dashboards"
     mkdir -p "$MONITORING_DIR/grafana/dashboards"
 
-    if [ ! -f "$MONITORING_DIR/prometheus.yml" ]; then
-        log "  Creating production Prometheus config..."
-        cat > "$MONITORING_DIR/prometheus.yml" <<'PROMEOF'
+    # ⚠️ Embedded DNS сломан ядром VPS — таргеты по статическим IP (TASK-DNS-4).
+    # Файл перегенерируется (с бэкапом), чтобы мигрировать старые hostname-таргеты.
+    if [ -f "$MONITORING_DIR/prometheus.yml" ]; then
+        cp "$MONITORING_DIR/prometheus.yml" "$MONITORING_DIR/prometheus.yml.bak-$(date +%Y%m%d-%H%M%S)"
+    fi
+    log "  Writing production Prometheus config (static IP targets)..."
+    cat > "$MONITORING_DIR/prometheus.yml" <<'PROMEOF'
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
 
+rule_files:
+  - /etc/prometheus/alerts.yml
+
 scrape_configs:
   - job_name: "tracking"
     static_configs:
-      - targets: ["dryclean-tracking:8020"]
+      - targets: ["172.22.0.4:8020"]
     metrics_path: /metrics
 
   - job_name: "content"
     static_configs:
-      - targets: ["dryclean-content:8011"]
+      - targets: ["172.22.0.2:8011"]
+    metrics_path: /metrics
+
+  - job_name: "postgres-exporter"
+    static_configs:
+      - targets: ["172.22.0.5:9187"]
     metrics_path: /metrics
 
   - job_name: "prometheus"
     static_configs:
       - targets: ["localhost:9090"]
 PROMEOF
+
+    # Alert rules: pg_up == 0 5m и недоступность exporter'а (TASK-DNS-4)
+    if [ -f "$APP_DIR/monitoring/prometheus.alerts.yml" ]; then
+        cp "$APP_DIR/monitoring/prometheus.alerts.yml" "$MONITORING_DIR/prometheus.alerts.yml"
+        log "  Alert rules installed from repo (monitoring/prometheus.alerts.yml)"
+    else
+        cat > "$MONITORING_DIR/prometheus.alerts.yml" <<'ALERTEOF'
+groups:
+  - name: postgres
+    rules:
+      - alert: PostgresExporterUnreachable
+        expr: up{job="postgres-exporter"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "postgres-exporter недоступен (172.22.0.5:9187)"
+          description: "Свой Prometheus не может скрейпить postgres-exporter более 5 минут."
+
+      - alert: PgUpZero
+        expr: pg_up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "pg_up = 0 — exporter не подключён к PostgreSQL"
+          description: "postgres-exporter не может подключиться к БД более 5 минут (ЧТЗ_Фикс_Docker_DNS_VPS, TASK-DNS-4)."
+
+  - name: services
+    rules:
+      - alert: TrackingMetricsDown
+        expr: up{job="tracking"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "tracking /metrics недоступен (172.22.0.4:8020)"
+          description: "Prometheus не получает метрики tracking более 5 минут."
+
+      - alert: ContentMetricsDown
+        expr: up{job="content"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "content /metrics недоступен (172.22.0.2:8011)"
+          description: "Prometheus не получает метрики content более 5 минут."
+ALERTEOF
+        log "  Alert rules written (pg_up == 0 на 5 минут)"
     fi
 
     if [ ! -f "$MONITORING_DIR/grafana/provisioning/datasources/datasources.yml" ]; then
@@ -542,6 +632,7 @@ DPEOF
         --restart unless-stopped \
         -p 127.0.0.1:${PROMETHEUS_PORT}:9090 \
         -v "$MONITORING_DIR/prometheus.yml:/etc/prometheus/prometheus.yml:ro" \
+        -v "$MONITORING_DIR/prometheus.alerts.yml:/etc/prometheus/alerts.yml:ro" \
         -v dryclean_prometheus:/prometheus \
         prom/prometheus:v2.53.0 \
         --config.file=/etc/prometheus/prometheus.yml \
@@ -667,6 +758,7 @@ if [ "$SMOKE_FAIL" -gt 0 ]; then
         docker run -d \
             --name dryclean-content \
             --network dryclean-net \
+            --ip 172.22.0.2 \
             --restart unless-stopped \
             -e DATABASE_URL="postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
             -e DATABASE_URL_SYNC="postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:5432/${POSTGRES_DB:-dryclean_content}" \
@@ -678,6 +770,7 @@ if [ "$SMOKE_FAIL" -gt 0 ]; then
         docker run -d \
             --name dryclean-frontend \
             --network dryclean-net \
+            --ip 172.22.0.10 \
             --restart unless-stopped \
             -e NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-/api}" \
             -e NEXT_PUBLIC_CONTENT_API_URL="${NEXT_PUBLIC_CONTENT_API_URL:-/api/content}" \

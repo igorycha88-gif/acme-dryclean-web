@@ -238,15 +238,23 @@ GRANT pg_monitor TO metrics_exporter;
 SQL
 
     docker rm -f dryclean-postgres-exporter 2>/dev/null || true
-    docker network create dryclean-net 2>/dev/null || true
-    PG_HOST=$PG_CONTAINER
-    docker inspect "$PG_CONTAINER" --format '{{json .NetworkSettings.Networks}}' | grep -q dryclean-net || PG_HOST=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$PG_CONTAINER")
+    docker network create --subnet 172.22.0.0/16 dryclean-net 2>/dev/null || true
+
+    # Embedded DNS сломан ядром VPS (127.0.0.11 connection refused):
+    # exporter обязан ходить в postgres по IP, а не по имени
+    # (ЧТЗ_Фикс_Docker_DNS_VPS, TASK-DNS-1).
+    PG_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' "$PG_CONTAINER" | awk '{print $1}')
+    [ -n "$PG_IP" ] || fatal "could not determine postgres IP for $PG_CONTAINER"
+    log "  postgres $PG_CONTAINER IP: $PG_IP (статический адрес для extra_hosts)"
 
     docker run -d \
         --name dryclean-postgres-exporter \
         --network dryclean-net \
+        --ip 172.22.0.5 \
+        --add-host "postgres:${PG_IP}" \
+        --add-host "dryclean-postgres:${PG_IP}" \
         --restart unless-stopped \
-        -e DATA_SOURCE_NAME="postgresql://metrics_exporter:${EXPORTER_PASSWORD}@${PG_HOST}:5432/${PG_DB}?sslmode=disable" \
+        -e DATA_SOURCE_NAME="postgresql://metrics_exporter:${EXPORTER_PASSWORD}@${PG_IP}:5432/${PG_DB}?sslmode=disable" \
         -p 127.0.0.1:9187:9187 \
         "$POSTGRES_EXPORTER_IMAGE"
 

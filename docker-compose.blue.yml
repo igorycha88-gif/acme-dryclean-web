@@ -1,5 +1,8 @@
 # Blue-Green: BLUE окружение
 # Порты: frontend:3001, content:8011, postgres:5433, redis:6380, rabbitmq:5673
+# ⚠️ Embedded DNS Docker сломан ядром VPS — связность уже на статических IP
+# подсети 172.26.0.0/16 (postgres-blue = 172.26.0.20). Новые сервисы добавлять
+# только с ipv4_address. См. требования/ЧТЗ_Фикс_Docker_DNS_VPS.md (TASK-DNS-2).
 
 networks:
   blue-net:

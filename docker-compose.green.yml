@@ -1,5 +1,14 @@
 # Blue-Green: GREEN окружение
 # Порты: frontend:3002, content:8012, postgres:5434, redis:6381, rabbitmq:5674
+# ⚠️ Embedded DNS Docker сломан ядром VPS — вся связность по статическим IP
+# (зеркало blue-окружения). См. требования/ЧТЗ_Фикс_Docker_DNS_VPS.md (TASK-DNS-2).
+
+networks:
+  green-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.27.0.0/16
 
 services:
   frontend-green:
@@ -10,6 +19,9 @@ services:
         NEXT_PUBLIC_TRACKING_API_URL: ""
     image: dryclean/frontend:${VERSION:-latest}
     container_name: frontend-green
+    networks:
+      green-net:
+        ipv4_address: 172.27.0.10
     expose:
       - "3000"
     environment:
@@ -30,6 +42,9 @@ services:
   postgres-green:
     image: postgres:16
     container_name: postgres-green
+    networks:
+      green-net:
+        ipv4_address: 172.27.0.20
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-dryclean}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -50,6 +65,9 @@ services:
   redis-green:
     image: redis:7
     container_name: redis-green
+    networks:
+      green-net:
+        ipv4_address: 172.27.0.30
     expose:
       - "6379"
     labels:
@@ -64,6 +82,9 @@ services:
   rabbitmq-green:
     image: rabbitmq:3-management
     container_name: rabbitmq-green
+    networks:
+      green-net:
+        ipv4_address: 172.27.0.40
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-dryclean}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
@@ -85,11 +106,15 @@ services:
       dockerfile: Dockerfile
     image: dryclean/content:${VERSION:-latest}
     container_name: content-green
+    networks:
+      green-net:
+        ipv4_address: 172.27.0.50
     expose:
       - "8011"
     environment:
-      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@postgres-green:5432/${POSTGRES_DB:-dryclean_content}
-      - DATABASE_URL_SYNC=postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@postgres-green:5432/${POSTGRES_DB:-dryclean_content}
+      # IP вместо имени postgres-green: embedded DNS сломан ядром VPS (TASK-DNS-2)
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@172.27.0.20:5432/${POSTGRES_DB:-dryclean_content}
+      - DATABASE_URL_SYNC=postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@172.27.0.20:5432/${POSTGRES_DB:-dryclean_content}
       - UPLOAD_DIR=/app/uploads
     volumes:
       - content_green_uploads:/app/uploads
@@ -114,11 +139,15 @@ services:
       dockerfile: Dockerfile
     image: dryclean/tracking:${VERSION:-latest}
     container_name: tracking-green
+    networks:
+      green-net:
+        ipv4_address: 172.27.0.60
     expose:
       - "8020"
     environment:
-      - TRACKING_DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@postgres-green:5432/${POSTGRES_DB:-dryclean_content}
-      - TRACKING_DATABASE_URL_SYNC=postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@postgres-green:5432/${POSTGRES_DB:-dryclean_content}
+      # IP вместо имени postgres-green: embedded DNS сломан ядром VPS (TASK-DNS-2)
+      - TRACKING_DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@172.27.0.20:5432/${POSTGRES_DB:-dryclean_content}
+      - TRACKING_DATABASE_URL_SYNC=postgresql+psycopg2://${POSTGRES_USER:-dryclean}:${POSTGRES_PASSWORD}@172.27.0.20:5432/${POSTGRES_DB:-dryclean_content}
       - TRACKING_CORS_ORIGINS=["https://da-dryclean.ru"]
       - TRACKING_DEBUG=false
     depends_on:

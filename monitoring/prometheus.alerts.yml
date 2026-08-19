@@ -1,0 +1,42 @@
+# Alert rules — свой Prometheus на VPS (TASK-DNS-4, ЧТЗ_Фикс_Docker_DNS_VPS).
+# Дублирует контроль БД независимо от центрального мониторинга.
+groups:
+  - name: postgres
+    rules:
+      - alert: PostgresExporterUnreachable
+        expr: up{job="postgres-exporter"} == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "postgres-exporter недоступен (172.22.0.5:9187)"
+          description: "Свой Prometheus не может скрейпить postgres-exporter более 5 минут."
+
+      - alert: PgUpZero
+        expr: pg_up == 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "pg_up = 0 — exporter не подключён к PostgreSQL"
+          description: "postgres-exporter не может подключиться к БД более 5 минут (ЧТЗ_Фикс_Docker_DNS_VPS, TASK-DNS-4)."
+
+  - name: services
+    rules:
+      - alert: TrackingMetricsDown
+        expr: up{job="tracking"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "tracking /metrics недоступен (172.22.0.4:8020)"
+          description: "Prometheus не получает метрики tracking более 5 минут."
+
+      - alert: ContentMetricsDown
+        expr: up{job="content"} == 0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "content /metrics недоступен (172.22.0.2:8011)"
+          description: "Prometheus не получает метрики content более 5 минут."
