@@ -91,6 +91,19 @@ if command -v docker &>/dev/null; then
     log "  Disk after cleanup: $(df -m "$APP_DIR" | tail -1 | awk '{print $4}')MB free"
 fi
 
+# ── Step 1.15: TLS certificate check & renewal ───────────────────────────────
+# The compose certbot loop (docker-compose.prod.yml) is no longer running
+# under the docker-run deploy model — certificates are renewed here instead.
+# Runs BEFORE the disk gate so a full disk cannot block an emergency cert fix
+# (renewal needs only a few MB). Idempotent: no-op while cert is valid ≥30d.
+
+if [ -f "$(dirname "$0")/renew-cert.sh" ]; then
+    log "── Step 1.15: TLS certificate check/renewal ──"
+    bash "$(dirname "$0")/renew-cert.sh" 2>&1 | tee -a "$DEPLOY_LOG" || fatal "TLS certificate renewal failed"
+else
+    log "  WARN: scripts/renew-cert.sh not found — skipping certificate renewal"
+fi
+
 DISK_FREE=$(df -m "$APP_DIR" | tail -1 | awk '{print $4}')
 if [ "$DISK_FREE" -lt 1024 ]; then
     fatal "Insufficient disk space: ${DISK_FREE}MB free (need 1GB)"

@@ -1,0 +1,68 @@
+name: TLS Certificate Renewal
+
+on:
+  schedule:
+    - cron: "20 3 * * *"
+    - cron: "20 15 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: cert-renew
+  cancel-in-progress: false
+
+jobs:
+  renew:
+    name: Renew TLS certificate on VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Renew certificate via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true
+          command_timeout: 8m
+          script: |
+            set -euo pipefail
+            if [ ! -f /opt/app/scripts/renew-cert.sh ]; then
+              echo "ERROR: /opt/app/scripts/renew-cert.sh not found on VPS — run a full deploy first"
+              exit 1
+            fi
+            bash /opt/app/scripts/renew-cert.sh
+
+      - name: Verify live certificate
+        run: |
+          set -euo pipefail
+          EXPIRY=$(echo | openssl s_client -connect da-dryclean.ru:443 -servername da-dryclean.ru 2>/dev/null | openssl x509 -noout -enddate | cut -d= -f2)
+          echo "Live certificate expires: $EXPIRY"
+          DAYS=$(( ($(date -d "$EXPIRY" +%s) - $(date +%s)) / 86400 ))
+          echo "Days remaining: $DAYS"
+          if [ "$DAYS" -lt 14 ]; then
+            echo "::error::Live certificate expires in $DAYS days"
+            exit 1
+          fi
+          echo "Live certificate OK ($DAYS days remaining)"
+
+      - name: Notify Telegram (Failure)
+        if: failure()
+        uses: appleboy/ssh-action@v1.0.3
+        continue-on-error: true
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: false
+          command_timeout: 30s
+          script: |
+            source /opt/app/.env 2>/dev/null || true
+            if [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
+              MESSAGE="❌ Продление TLS-сертификата da-dryclean.ru FAILED%0AПроверьте workflow cert-renew!"
+              curl -s --max-time 15 -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+                -H "Content-Type: application/json" \
+                -d "{\"chat_id\": \"${TELEGRAM_CHAT_ID}\", \"text\": \"${MESSAGE}\"}" > /dev/null 2>&1 || true
+            fi
