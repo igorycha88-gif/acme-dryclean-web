@@ -177,7 +177,9 @@ if [ -z "${SKIP_NODE:-}" ]; then
         log "  binary already installed"
     fi
 
-    id -r node_exporter &>/dev/null || useradd --system --home-dir /nonexistent --shell /usr/sbin/nologin node_exporter
+    if ! id node_exporter &>/dev/null; then
+        useradd --system --home-dir /nonexistent --shell /usr/sbin/nologin node_exporter
+    fi
 
     if [ ! -f /etc/systemd/system/node_exporter.service ]; then
         cat > /etc/systemd/system/node_exporter.service <<EOF
