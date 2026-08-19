@@ -20,5 +20,5 @@ jobs:
           script_stop: false
           command_timeout: 3m
           script: |
-            echo "=== nginx.conf structure ==="
-            grep -n "server_name\|map \|include\|location = \|upstream\|http {" /etc/nginx/nginx.conf | head -40
+            echo "=== nginx.conf lines 44-100 ==="
+            sed -n '44,100p' /etc/nginx/nginx.conf
