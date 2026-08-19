@@ -20,4 +20,4 @@ jobs:
           script_stop: true
           command_timeout: 1m
           script: |
-            grep "^MONITORING_API_KEY=" /opt/app/.env
+            grep "^MONITORING_API_KEY=" /opt/app/.env | cut -d= -f2- | base64
