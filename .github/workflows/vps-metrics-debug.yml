@@ -1,0 +1,42 @@
+name: VPS Metrics Debug
+
+on:
+  workflow_dispatch:
+
+jobs:
+  debug:
+    name: Debug metrics endpoints on VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Debug via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: false
+          command_timeout: 3m
+          script: |
+            KEY=$(grep "^MONITORING_API_KEY=" /opt/app/.env | cut -d= -f2-)
+            echo "=== via nginx with key ==="
+            for ep in tracking content node postgres; do
+              CODE=$(curl -s -o /tmp/m.$ep -w "%{http_code}" --max-time 10 -H "X-Monitoring-Key: $KEY" https://da-dryclean.ru/metrics/$ep)
+              SIZE=$(wc -c < /tmp/m.$ep)
+              echo "-- /metrics/$ep -> HTTP $CODE, ${SIZE} bytes"
+              head -c 300 /tmp/m.$ep; echo; echo "..."
+            done
+            echo "=== grep expected metrics ==="
+            echo "business_: $(grep -c '^business_' /tmp/m.tracking)"
+            echo "content_http_: $(grep -c '^content_http_' /tmp/m.content)"
+            echo "node_cpu: $(grep -c '^node_cpu_seconds_total' /tmp/m.node)"
+            echo "pg_: $(grep -c '^pg_' /tmp/m.postgres)"
+            echo "=== upstreams direct ==="
+            curl -s -o /tmp/u.content -w "8011 content: %{http_code}\n" --max-time 5 http://127.0.0.1:8011/metrics
+            curl -s -o /tmp/u.node -w "9100 node: %{http_code}\n" --max-time 5 http://127.0.0.1:9100/metrics
+            curl -s -o /tmp/u.pg -w "9187 pg: %{http_code}\n" --max-time 5 http://127.0.0.1:9187/metrics
+            echo "content direct prefixes: $(head -c 400 /tmp/u.content)"
+            echo "node direct cpu lines: $(grep -c '^node_cpu_seconds_total' /tmp/u.node)"
+            echo "pg direct pg_ lines: $(grep -c '^pg_' /tmp/u.pg)"
