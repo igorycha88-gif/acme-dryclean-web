@@ -1,0 +1,23 @@
+name: VPS Get Monitoring Key
+
+on:
+  workflow_dispatch:
+
+jobs:
+  get-key:
+    name: Read MONITORING_API_KEY from VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - name: Read key via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop: true
+          command_timeout: 1m
+          script: |
+            grep "^MONITORING_API_KEY=" /opt/app/.env
