@@ -598,6 +598,35 @@ DPEOF
 
 setup_monitoring
 
+# ── Step 5.7: Metrics export setup (central monitoring) ──────────────────────
+
+setup_metrics_export() {
+    log "── Metrics Export Setup (central monitoring) ──"
+
+    if [ ! -f "$APP_DIR/scripts/setup-metrics-export.sh" ]; then
+        log "  WARN: scripts/setup-metrics-export.sh not found — skipping"
+        return 0
+    fi
+
+    if ! grep -q "^MONITORING_API_KEY=" "$APP_DIR/.env"; then
+        openssl rand -hex 24 | sed 's/^/MONITORING_API_KEY=/' >> "$APP_DIR/.env"
+        chmod 600 "$APP_DIR/.env"
+        log "  Generated MONITORING_API_KEY (stored in $APP_DIR/.env, chmod 600)"
+    else
+        log "  Reusing MONITORING_API_KEY from $APP_DIR/.env"
+    fi
+
+    METRICS_KEY=$(grep "^MONITORING_API_KEY=" "$APP_DIR/.env" | cut -d= -f2-)
+
+    if bash "$APP_DIR/scripts/setup-metrics-export.sh" --key "$METRICS_KEY" 2>&1 | tee -a "$DEPLOY_LOG"; then
+        log "  Metrics export configured and verified"
+    else
+        fatal "Metrics export setup failed"
+    fi
+}
+
+setup_metrics_export
+
 # ── Step 6: Smoke tests ─────────────────────────────────────────────────────
 
 log "── Step 6: Smoke tests ──"

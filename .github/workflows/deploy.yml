@@ -140,7 +140,7 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          source: "scripts/deploy-vps.sh,scripts/renew-cert.sh,scripts/*.yml,nginx/,docker-compose.prod.yml,monitoring/grafana/dashboards/"
+          source: "scripts/deploy-vps.sh,scripts/renew-cert.sh,scripts/setup-metrics-export.sh,scripts/*.yml,nginx/,docker-compose.prod.yml,monitoring/grafana/dashboards/"
           target: "/opt/app"
           strip_components: 0
 
@@ -200,6 +200,7 @@ jobs:
             test_ep GET "http://127.0.0.1:8020/health" "200" "Tracking Service Health"
             test_ep GET "http://127.0.0.1:9090/-/healthy" "200" "Prometheus Health"
             test_ep GET "http://127.0.0.1:3030/api/health" "200" "Grafana Health"
+            test_ep GET "https://da-dryclean.ru/metrics/tracking" "403" "Metrics guard (403 without key)"
 
             echo "Smoke: $PASS passed, $FAIL failed"
             [ "$FAIL" -eq 0 ] || exit 1

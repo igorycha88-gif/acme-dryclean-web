@@ -62,7 +62,7 @@ EOF
     fi
 
     if ! grep -q "location = /metrics/tracking" "$NGINX_MAIN_CONF"; then
-        log "  inserting metrics locations after 'server_name $DOMAIN;'"
+        log "  inserting metrics locations into the 443 server block"
         METRICS_BLOCK_FILE=$(mktemp)
         cat > "$METRICS_BLOCK_FILE" <<EOF
 
@@ -104,8 +104,18 @@ EOF
         }
         # ── Metrics export for central monitoring ── END
 EOF
-        awk -v blockfile="$METRICS_BLOCK_FILE" -v marker="        server_name $DOMAIN;" '
-            $0 == marker { print; while ((getline line < blockfile) > 0) print line; next }
+        # Insert after the server_name line of the FIRST server block that
+        # listens on 443 (the main ssl server). Exact-match locations (=)
+        # take priority over any regex/prefix locations, so the position
+        # inside the block does not matter.
+        awk -v blockfile="$METRICS_BLOCK_FILE" '
+            /listen[[:space:]]+443/ { in_ssl = 1 }
+            in_ssl && /server_name/ && !inserted {
+                print
+                while ((getline line < blockfile) > 0) print line
+                inserted = 1
+                next
+            }
             { print }
         ' "$NGINX_MAIN_CONF" > "${NGINX_MAIN_CONF}.tmp"
         mv "${NGINX_MAIN_CONF}.tmp" "$NGINX_MAIN_CONF"
@@ -115,7 +125,7 @@ EOF
     fi
 
     grep -q "location = /metrics/tracking" "$NGINX_MAIN_CONF" \
-        || fatal "metrics locations were not inserted — insert them manually after 'server_name $DOMAIN;' (see nginx/prod.conf) and re-run"
+        || fatal "metrics locations were not inserted — insert them manually into the 443 server block (see nginx/prod.conf) and re-run"
 
     if nginx -t 2>&1; then
         nginx -s reload
