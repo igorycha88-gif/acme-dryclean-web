@@ -96,7 +96,7 @@ jobs:
 
             export GITHUB_REPOSITORY="${{ github.repository }}"
             export GHCR_REGISTRY="${{ env.REGISTRY }}"
-            export GHCR_REPO="${{ github.repository }}"
+            export GHCR_REPO="${{ github.repository_owner }}"
 
             APP_DIR="/opt/app"
             IMAGE_TAG="${{ github.event.inputs.image_tag }}"
