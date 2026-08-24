@@ -18,6 +18,7 @@ import Footer from "@/components/Footer";
 import Container from "@/components/ui/Container";
 import Section from "@/components/ui/Section";
 import Button from "@/components/ui/Button";
+import SearchVariations from "@/components/SearchVariations";
 import { CONTACTS } from "@/lib/constants";
 import {
   getServiceBySlug,
@@ -65,15 +66,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: service.seoTitle,
       description: service.seoDescription,
     },
-    keywords: [
-      service.title.toLowerCase(),
-      `${service.title.toLowerCase()} на дому москва`,
-      `${service.title.toLowerCase()} цена москва`,
-      `профессиональная ${service.title.toLowerCase()} москва`,
-      `${service.title.toLowerCase()} с выездом москва`,
-      "химчистка москва",
-      "выездная химчистка москва",
-    ],
+    keywords: service.keywords,
     robots: {
       index: true,
       follow: true,
@@ -161,10 +154,13 @@ export default async function ServicePage({ params }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
               <div>
                 <h1 className="font-[family-name:var(--font-heading)] font-extrabold text-4xl leading-tight sm:text-5xl sm:leading-[56px]">
-                  {service.title}
+                  {service.h1}
                 </h1>
                 <p className="mt-4 text-base text-white/80 sm:text-lg">
                   {service.shortDescription}
+                </p>
+                <p className="mt-3 text-2xl font-bold text-white sm:text-3xl">
+                  {service.priceFrom}
                 </p>
                 <div className="mt-6 flex flex-wrap items-center gap-4">
                   <Button
@@ -180,7 +176,7 @@ export default async function ServicePage({ params }: Props) {
               <div className="aspect-square rounded-2xl overflow-hidden relative">
                 <Image
                   src={service.heroImage}
-                  alt={`${service.title} — профессиональная химчистка на дому в Москве и МО`}
+                  alt={`${service.h1} — профессиональная химчистка с выездом по Москве и МО`}
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -416,6 +412,16 @@ export default async function ServicePage({ params }: Props) {
             </div>
           </Container>
         </Section>
+
+        <SearchVariations
+          correctQueries={service.searchVariations.correct}
+          typoQueries={service.searchVariations.typos}
+          relatedLinks={[
+            { href: "/ceny", label: "Цены на химчистку" },
+            { href: "/vyezd", label: "Выездная химчистка" },
+            { href: "/mebel", label: "Химчистка мягкой мебели" },
+          ]}
+        />
       </main>
       <Footer />
     </>

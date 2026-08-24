@@ -55,6 +55,8 @@ export interface LocalBusinessJsonLd {
     itemListElement: Array<{
       "@type": string;
       position: number;
+      priceCurrency: string;
+      price: number;
       item: {
         "@type": string;
         name: string;
@@ -119,15 +121,21 @@ export function generateLocalBusinessJsonLd(): LocalBusinessJsonLd {
     hasOfferCatalog: {
       "@type": "OfferCatalog",
       name: "Услуги химчистки",
-      itemListElement: SERVICES.map((service, index) => ({
-        "@type": "Offer",
-        position: index + 1,
-        item: {
-          "@type": "Service",
-          name: service.title,
-          url: `${SITE_URL}/uslugi/${service.slug}`,
-        },
-      })),
+      itemListElement: SERVICES.map((service) => {
+        const serviceData = SERVICES_DATA[service.slug];
+        const price = serviceData?.priceFromValue ?? 0;
+        return {
+          "@type": "Offer",
+          position: SERVICES.indexOf(service) + 1,
+          priceCurrency: "RUB",
+          price,
+          item: {
+            "@type": "Service",
+            name: service.title,
+            url: `${SITE_URL}/uslugi/${service.slug}`,
+          },
+        };
+      }),
     },
   };
 }
@@ -152,13 +160,39 @@ export interface ServiceJsonLd {
   offers: {
     "@type": string;
     priceCurrency: string;
+    price: number;
+    priceSpecification?: {
+      "@type": string;
+      priceCurrency: string;
+      price: number;
+      referenceQuantity?: {
+        "@type": string;
+        value: number;
+        unitCode: string;
+      };
+    };
     availability: string;
+    url: string;
   };
 }
 
 export function generateServiceJsonLd(slug: string): ServiceJsonLd | null {
   const service = SERVICES_DATA[slug];
   if (!service) return null;
+
+  const isPerSqm = service.priceUnit === "за м²";
+  const priceSpecification = isPerSqm
+    ? {
+        "@type": "UnitPriceSpecification",
+        priceCurrency: "RUB",
+        price: service.priceFromValue,
+        referenceQuantity: {
+          "@type": "QuantitativeValue",
+          value: 1,
+          unitCode: "MTK",
+        },
+      }
+    : undefined;
 
   return {
     "@context": "https://schema.org",
@@ -180,7 +214,10 @@ export function generateServiceJsonLd(slug: string): ServiceJsonLd | null {
     offers: {
       "@type": "Offer",
       priceCurrency: "RUB",
+      price: service.priceFromValue,
+      priceSpecification,
       availability: "https://schema.org/InStock",
+      url: `${SITE_URL}/uslugi/${slug}`,
     },
   };
 }
