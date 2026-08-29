@@ -518,9 +518,18 @@ scrape_configs:
 PROMEOF
 
     # Alert rules: pg_up == 0 5m и недоступность exporter'а (TASK-DNS-4)
-    if [ -f "$APP_DIR/monitoring/prometheus.alerts.yml" ]; then
-        cp "$APP_DIR/monitoring/prometheus.alerts.yml" "$MONITORING_DIR/prometheus.alerts.yml"
-        log "  Alert rules installed from repo (monitoring/prometheus.alerts.yml)"
+    ALERTS_SRC="$APP_DIR/monitoring/prometheus.alerts.yml"
+    ALERTS_DST="$MONITORING_DIR/prometheus.alerts.yml"
+    if [ -f "$ALERTS_SRC" ]; then
+        # MONITORING_DIR совпадает с $APP_DIR/monitoring по определению (line 480),
+        # поэтому source и dest могут быть одним файлом — cp в этом случае аварийно
+        # завершается (GNU cp: "are the same file") и под set -euo pipefail рвёт деплой.
+        if [ "$(readlink -f "$ALERTS_SRC")" = "$(readlink -f "$ALERTS_DST" 2>/dev/null || true)" ]; then
+            log "  Alert rules already in place ($ALERTS_DST)"
+        else
+            cp "$ALERTS_SRC" "$ALERTS_DST"
+            log "  Alert rules installed from repo (monitoring/prometheus.alerts.yml)"
+        fi
     else
         cat > "$MONITORING_DIR/prometheus.alerts.yml" <<'ALERTEOF'
 groups:
