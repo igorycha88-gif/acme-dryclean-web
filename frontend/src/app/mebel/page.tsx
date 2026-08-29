@@ -300,7 +300,7 @@ export default function MebelPage() {
                   Матрасы
                 </h3>
                 <p className="mt-2 text-sm text-text-secondary">
-                  Дезинфекция и&nbsp;чистка матрасов всех размеров. Удаление
+                  Чистка матрасов всех размеров. Удаление
                   клещей.
                 </p>
                 <p className="mt-3 text-base font-semibold text-secondary">
