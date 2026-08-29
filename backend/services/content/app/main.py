@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app.api.v1 import api_router
 from app.config import settings
 from app.core.metrics import setup_metrics
+from app.core.postgres_metrics import postgres_metrics_endpoint
 from app.database import engine
 from app.models.models import Base
 
@@ -53,6 +54,11 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "service": settings.service_name}
+
+
+@app.get("/metrics/postgres", include_in_schema=False)
+async def postgres_metrics():
+    return await postgres_metrics_endpoint()
 
 
 app.include_router(api_router)

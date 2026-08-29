@@ -142,6 +142,7 @@ export interface TrackEventPayload {
     | "page_view"
     | "service_click"
     | "phone_click"
+    | "click_phone"
     | "messenger_click"
     | "form_submit";
   event_name?: string;
@@ -204,8 +205,8 @@ export function trackPhoneClick(phone: string): void {
   sendEvent({
     session_id: getSessionId() as unknown as string,
     visitor_id: getVisitorId(),
-    event_type: "phone_click",
-    event_name: "phone_click",
+    event_type: "click_phone",
+    event_name: "click_phone",
     payload: { phone },
   });
 }

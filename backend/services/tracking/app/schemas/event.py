@@ -5,7 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 EventType = Literal[
-    "page_view", "service_click", "phone_click",
+    "page_view", "service_click", "phone_click", "click_phone",
     "messenger_click", "form_submit"
 ]
 

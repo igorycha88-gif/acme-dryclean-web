@@ -5,7 +5,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-EXCLUDED_PATHS = {"/metrics", "/health"}
+EXCLUDED_PATHS = {"/metrics", "/metrics/postgres", "/health"}
 STATIC_PREFIXES = ("/uploads", "/static")
 
 http_requests_total = Counter(
