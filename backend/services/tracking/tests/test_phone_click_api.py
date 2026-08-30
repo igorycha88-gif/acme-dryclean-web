@@ -127,3 +127,29 @@ async def test_metrics_scrape_creates_no_duplicate_events(app_client):
             )
         )).all()
         assert len(rows) == 1
+
+
+@pytest.mark.asyncio
+async def test_stats_counts_click_phone(app_client):
+    client, factory = app_client
+
+    response = await client.post("/api/v1/tracking/event", json=event_payload())
+    assert response.status_code == 200
+
+    stats = await client.get("/api/v1/tracking/stats?period=24h")
+    assert stats.status_code == 200
+    phone_clicks = stats.json()["data"]["phone_clicks"]
+    assert phone_clicks.get("+74952261573") == 1
+
+
+@pytest.mark.asyncio
+async def test_stats_counts_phone_click_mix_click_phone_and_legacy(app_client):
+    client, factory = app_client
+
+    await client.post("/api/v1/tracking/event", json=event_payload())
+    await client.post("/api/v1/tracking/event", json=event_payload(event_type="phone_click"))
+
+    stats = await client.get("/api/v1/tracking/stats?period=24h")
+    assert stats.status_code == 200
+    phone_clicks = stats.json()["data"]["phone_clicks"]
+    assert phone_clicks.get("+74952261573") == 2

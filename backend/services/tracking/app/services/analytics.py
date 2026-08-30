@@ -13,6 +13,8 @@ from app.schemas.stats import StatsPeriod
 
 logger = structlog.get_logger()
 
+PHONE_CLICK_EVENT_TYPES = ("click_phone", "phone_click")
+
 
 def classify_referrer(referrer: str | None) -> str:
     if not referrer:
@@ -207,7 +209,7 @@ class AnalyticsService:
             phone_col,
             func.count(AnalyticsEvent.id)
         ).where(
-            AnalyticsEvent.event_type == "phone_click",
+            AnalyticsEvent.event_type.in_(PHONE_CLICK_EVENT_TYPES),
             AnalyticsEvent.created_at >= since
         ).group_by(literal_column("phone_val"))
         result = await self.db.execute(q)
