@@ -77,7 +77,6 @@ export default function ServicesPage() {
               <tr>
                 <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Название</th>
                 <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Slug</th>
-                <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Цена</th>
                 <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Статус</th>
                 <th className="text-right px-6 py-3 text-sm font-medium text-gray-500">Действия</th>
               </tr>
@@ -90,9 +89,6 @@ export default function ServicesPage() {
                     <div className="text-sm text-gray-500 line-clamp-1">{service.description}</div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">{service.slug}</td>
-                  <td className="px-6 py-4 text-sm">
-                    {service.price ? `${service.price} ₽` : "—"}
-                  </td>
                   <td className="px-6 py-4">
                     <span
                       className={`px-2 py-1 text-xs rounded-full ${

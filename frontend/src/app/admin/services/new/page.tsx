@@ -13,7 +13,6 @@ export default function NewServicePage() {
     slug: "",
     description: "",
     image_url: "",
-    price: "",
     category: "",
     is_active: true,
     sort_order: 0,
@@ -34,7 +33,6 @@ export default function NewServicePage() {
 
     const data = {
       ...form,
-      price: form.price ? parseFloat(form.price) : null,
     };
 
     const result = await contentApi.services.create(data);
@@ -100,28 +98,15 @@ export default function NewServicePage() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">URL изображения</label>
-            <input
-              type="text"
-              value={form.image_url}
-              onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="/images/services/sofa.jpg"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Цена (₽)</label>
-            <input
-              type="number"
-              step="0.01"
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="3000"
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">URL изображения</label>
+          <input
+            type="text"
+            value={form.image_url}
+            onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+            placeholder="/images/services/sofa.jpg"
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">

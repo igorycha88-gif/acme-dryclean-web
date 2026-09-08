@@ -14,7 +14,6 @@ export default function EditServicePage({ params }: { params: Promise<{ id: stri
     slug: "",
     description: "",
     image_url: "",
-    price: "",
     category: "",
     is_active: true,
     sort_order: 0,
@@ -30,7 +29,6 @@ export default function EditServicePage({ params }: { params: Promise<{ id: stri
           slug: result.slug,
           description: result.description,
           image_url: result.image_url || "",
-          price: result.price?.toString() || "",
           category: result.category || "",
           is_active: result.is_active,
           sort_order: result.sort_order,
@@ -47,7 +45,6 @@ export default function EditServicePage({ params }: { params: Promise<{ id: stri
 
     const data = {
       ...form,
-      price: form.price ? parseFloat(form.price) : null,
     };
 
     const { id } = await params;
@@ -116,26 +113,14 @@ export default function EditServicePage({ params }: { params: Promise<{ id: stri
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">URL изображения</label>
-            <input
-              type="text"
-              value={form.image_url}
-              onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Цена (₽)</label>
-            <input
-              type="number"
-              step="0.01"
-              value={form.price}
-              onChange={(e) => setForm({ ...form, price: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
+        <div>
+          <label className="block text-sm font-medium mb-2">URL изображения</label>
+          <input
+            type="text"
+            value={form.image_url}
+            onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+            className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">

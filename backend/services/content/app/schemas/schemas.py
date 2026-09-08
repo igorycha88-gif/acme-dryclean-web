@@ -1,5 +1,4 @@
 from datetime import datetime
-from decimal import Decimal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -10,7 +9,6 @@ class ServiceBase(BaseModel):
     slug: str = Field(..., max_length=200)
     description: str
     image_url: str | None = Field(None, max_length=500)
-    price: Decimal | None = Field(None, decimal_places=2)
     category: str | None = Field(None, max_length=100)
     is_active: bool = True
     sort_order: int = 0
@@ -25,7 +23,6 @@ class ServiceUpdate(BaseModel):
     slug: str | None = Field(None, max_length=200)
     description: str | None = None
     image_url: str | None = Field(None, max_length=500)
-    price: Decimal | None = Field(None, decimal_places=2)
     category: str | None = Field(None, max_length=100)
     is_active: bool | None = None
     sort_order: int | None = None

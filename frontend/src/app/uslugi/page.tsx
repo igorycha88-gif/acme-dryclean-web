@@ -10,7 +10,6 @@ import Container from "@/components/ui/Container";
 import Section from "@/components/ui/Section";
 import Button from "@/components/ui/Button";
 import { SERVICES, CONTACTS } from "@/lib/constants";
-import { SERVICES_DATA } from "@/lib/serviceData";
 import {
   generateBreadcrumbJsonLd,
   generateLocalBusinessJsonLd,
@@ -20,25 +19,25 @@ const SITE_URL = "https://da-dryclean.ru";
 
 export const metadata: Metadata = {
   title:
-    "Услуги химчистки на дому в Москве — цены от 1000 ₽, выезд | da-dryclean",
+    "Услуги химчистки на дому в Москве — выезд мастера за 1 час | da-dryclean",
   description:
-    "Полный каталог услуг выездной химчистки в Москве и МО: диваны, матрасы, ковры, ковролин, мягкая мебель, ростовые куклы, салон авто. Цена от 1000 ₽. Выезд бесплатно, без предоплаты. Звоните: +7 (495) 226-15-73.",
+    "Полный каталог услуг выездной химчистки в Москве и МО: диваны, матрасы, ковры, ковролин, мягкая мебель, ростовые куклы, салон авто. Выезд бесплатно, без предоплаты. Звоните: +7 (495) 226-15-73.",
   alternates: {
     canonical: `${SITE_URL}/uslugi`,
   },
   keywords: [
-    "химчистка на дому москва цены",
+    "химчистка на дому москва",
     "услуги химчистки москва",
     "выездная химчистка москва",
-    "химчистка дивана цена москва",
-    "химчистка матраса цена москва",
-    "химчистка ковра цена москва",
+    "химчистка дивана москва",
+    "химчистка матраса москва",
+    "химчистка ковра москва",
   ],
   openGraph: {
     title:
-      "Услуги химчистки на дому в Москве — цены от 1000 ₽, выезд | da-dryclean",
+      "Услуги химчистки на дому в Москве — выезд мастера за 1 час | da-dryclean",
     description:
-      "Диваны, матрасы, ковры, мягкая мебель, ростовые куклы, салон авто — профессиональная химчистка с выездом. Цена от 1000 ₽. Без предоплаты.",
+      "Диваны, матрасы, ковры, мягкая мебель, ростовые куклы, салон авто — профессиональная химчистка с выездом. Без предоплат.",
     url: `${SITE_URL}/uslugi`,
     type: "website",
   },
@@ -78,14 +77,12 @@ export default function AllServicesPage() {
             <p className="mt-3 text-center text-text-secondary max-w-2xl mx-auto">
               Профессиональная выездная химчистка мягкой мебели, диванов, матрасов
               и&nbsp;ковров в&nbsp;Москве и&nbsp;Московской области. Выезд мастера
-              в&nbsp;течение часа, безопасная химия, гарантия результата. Цена
-              от&nbsp;1000&nbsp;₽. Без предоплаты.
+              в&nbsp;течение часа, безопасная химия, гарантия результата.
+              Стоимость рассчитает менеджер. Без предоплаты.
             </p>
 
             <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {SERVICES.map((service) => {
-                const serviceData = SERVICES_DATA[service.slug];
-                return (
+              {SERVICES.map((service) => (
                 <Link
                   key={service.id}
                   href={`/uslugi/${service.slug}`}
@@ -106,18 +103,12 @@ export default function AllServicesPage() {
                   <p className="mt-2 text-sm text-text-secondary leading-relaxed">
                     {service.description}
                   </p>
-                  {serviceData && (
-                    <p className="mt-3 text-base font-semibold text-secondary">
-                      {serviceData.priceFrom}
-                    </p>
-                  )}
                   <span className="mt-3 inline-flex items-center gap-1 text-sm text-secondary group-hover:text-accent transition-colors duration-300">
                     Подробнее
                     <ArrowRight size={14} />
                   </span>
                 </Link>
-                );
-              })}
+              ))}
             </div>
 
             <div className="mt-12 rounded-2xl bg-primary p-8 text-center text-white max-md:p-6">

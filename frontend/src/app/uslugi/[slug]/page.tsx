@@ -159,9 +159,6 @@ export default async function ServicePage({ params }: Props) {
                 <p className="mt-4 text-base text-white/80 sm:text-lg">
                   {service.shortDescription}
                 </p>
-                <p className="mt-3 text-2xl font-bold text-white sm:text-3xl">
-                  {service.priceFrom}
-                </p>
                 <div className="mt-6 flex flex-wrap items-center gap-4">
                   <Button
                     variant="secondary"
@@ -417,7 +414,7 @@ export default async function ServicePage({ params }: Props) {
           correctQueries={service.searchVariations.correct}
           typoQueries={service.searchVariations.typos}
           relatedLinks={[
-            { href: "/ceny", label: "Цены на химчистку" },
+            { href: "/raiony", label: "Районы обслуживания" },
             { href: "/vyezd", label: "Выездная химчистка" },
             { href: "/mebel", label: "Химчистка мягкой мебели" },
           ]}

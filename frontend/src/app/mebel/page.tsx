@@ -22,9 +22,9 @@ const SITE_URL = "https://da-dryclean.ru";
 
 export const metadata: Metadata = {
   title:
-    "Химчистка мягкой мебели на дому в Москве — цена от 1700 ₽, выезд | da-dryclean",
+    "Химчистка мягкой мебели на дому в Москве — выезд мастера | da-dryclean",
   description:
-    "Профессиональная химчистка мягкой мебели на дому в Москве: диваны, кресла, стулья, пуфики. Удаление пятен, запахов, восстановление цвета. Выезд мастера за 1 час. Цена от 1700 ₽. Без предоплаты. Звоните: +7 (495) 226-15-73.",
+    "Профессиональная химчистка мягкой мебели на дому в Москве: диваны, кресла, стулья, пуфики. Удаление пятен, запахов, восстановление цвета. Выезд мастера за 1 час. Без предоплаты. Звоните: +7 (495) 226-15-73.",
   alternates: {
     canonical: `${SITE_URL}/mebel`,
   },
@@ -34,14 +34,13 @@ export const metadata: Metadata = {
     "чистка мягкой мебели москва",
     "химчистка мебели с выездом москва",
     "профессиональная химчистка мебели москва",
-    "химчистка мебели на дому цена москва",
     "чистка мебели от пятен москва",
   ],
   openGraph: {
     title:
-      "Химчистка мягкой мебели на дому в Москве — цена от 1700 ₽, выезд | da-dryclean",
+      "Химчистка мягкой мебели на дому в Москве — выезд мастера | da-dryclean",
     description:
-      "Профессиональная химчистка мягкой мебели на дому в Москве. Диваны, кресла, стулья. Удаление пятен и запахов. Цена от 1700 ₽. Без предоплаты.",
+      "Профессиональная химчистка мягкой мебели на дому в Москве. Диваны, кресла, стулья. Удаление пятен и запахов. Без предоплаты.",
     url: `${SITE_URL}/mebel`,
     type: "website",
   },
@@ -53,7 +52,7 @@ const FAQ = [
   {
     question: "Сколько стоит химчистка мягкой мебели в Москве?",
     answer:
-      "Стоимость зависит от типа и размера мебели. Химчистка дивана — от 1700 ₽, кресла — от 800 ₽, стула — от 350 ₽. Точную стоимость мастер озвучит после осмотра.",
+      "Стоимость зависит от типа и размера мебели. Точную стоимость мастер озвучит после осмотра, актуальный прайс-лист доступен для скачивания на сайте.",
   },
   {
     question: "Выезд мастера по Москве бесплатно?",
@@ -167,7 +166,7 @@ export default function MebelPage() {
                   результата.
                 </p>
                 <p className="mt-3 text-2xl font-bold text-white sm:text-3xl">
-                  Цена от&nbsp;1700&nbsp;₽ &middot; Выезд бесплатно
+                  Выезд бесплатно &middot; Оплата по&nbsp;факту
                 </p>
                 <div className="mt-6 flex flex-wrap items-center gap-4">
                   <Button
@@ -274,12 +273,12 @@ export default function MebelPage() {
                 <p className="mt-2 text-sm text-text-secondary">
                   Прямые, угловые, П-образные, модульные. Все типы обивки.
                 </p>
-                <p className="mt-3 text-base font-semibold text-secondary">
-                  от 1700 ₽
-                </p>
+                <span className="mt-3 inline-flex items-center gap-1 text-sm text-secondary group-hover:text-accent transition-colors">
+                  Подробнее <ArrowRight size={14} />
+                </span>
               </Link>
               <Link
-                href="/ceny"
+                href="/uslugi/himchistka-divanov"
                 className="group rounded-xl border border-gray-100 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
               >
                 <h3 className="font-[family-name:var(--font-heading)] font-bold text-lg">
@@ -288,9 +287,9 @@ export default function MebelPage() {
                 <p className="mt-2 text-sm text-text-secondary">
                   Кресла текстильные, кресло-кровать, офисные кресла, стулья.
                 </p>
-                <p className="mt-3 text-base font-semibold text-secondary">
-                  от 350 ₽
-                </p>
+                <span className="mt-3 inline-flex items-center gap-1 text-sm text-secondary group-hover:text-accent transition-colors">
+                  Подробнее <ArrowRight size={14} />
+                </span>
               </Link>
               <Link
                 href="/uslugi/himchistka-matrasov"
@@ -303,9 +302,9 @@ export default function MebelPage() {
                   Чистка матрасов всех размеров. Удаление
                   клещей.
                 </p>
-                <p className="mt-3 text-base font-semibold text-secondary">
-                  от 1000 ₽
-                </p>
+                <span className="mt-3 inline-flex items-center gap-1 text-sm text-secondary group-hover:text-accent transition-colors">
+                  Подробнее <ArrowRight size={14} />
+                </span>
               </Link>
             </div>
           </Container>

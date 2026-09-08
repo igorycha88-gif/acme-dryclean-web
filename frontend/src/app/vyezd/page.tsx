@@ -18,9 +18,9 @@ const SITE_URL = "https://da-dryclean.ru";
 
 export const metadata: Metadata = {
   title:
-    "Выездная химчистка на дому в Москве — выезд за 1 час, от 1000 ₽ | da-dryclean",
+    "Выездная химчистка на дому в Москве — выезд за 1 час | da-dryclean",
   description:
-    "Закажите выездную химчистку с выездом мастера на дом в Москве и МО. Выезд в течение 1 часа, безопасная химия, гарантия результата. Диваны, матрасы, ковры, мебель. Цена от 1000 ₽. Без предоплаты. Звоните: +7 (495) 226-15-73.",
+    "Закажите выездную химчистку с выездом мастера на дом в Москве и МО. Выезд в течение 1 часа, безопасная химия, гарантия результата. Диваны, матрасы, ковры, мебель. Без предоплаты. Звоните: +7 (495) 226-15-73.",
   alternates: {
     canonical: `${SITE_URL}/vyezd`,
   },
@@ -35,9 +35,9 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title:
-      "Выездная химчистка на дому в Москве — выезд за 1 час, от 1000 ₽ | da-dryclean",
+      "Выездная химчистка на дому в Москве — выезд за 1 час | da-dryclean",
     description:
-      "Выездная химчистка мебели, диванов, матрасов, ковров в Москве и МО. Выезд мастера в течение часа. Цена от 1000 ₽. Без предоплаты.",
+      "Выездная химчистка мебели, диванов, матрасов, ковров в Москве и МО. Выезд мастера в течение часа. Без предоплаты.",
     url: `${SITE_URL}/vyezd`,
     type: "website",
   },
@@ -69,37 +69,31 @@ const DIRECTIONS = [
     title: "Диваны и мягкая мебель",
     text: "Химчистка диванов, кресел, стульев, пуфиков. Удаление пятен, запахов, восстановление цвета.",
     href: "/uslugi/himchistka-divanov",
-    price: "от 1700 ₽",
   },
   {
     title: "Матрасы",
     text: "Глубокая чистка матрасов. Удаление пылевых клещей, пятен, аллергенов.",
     href: "/uslugi/himchistka-matrasov",
-    price: "от 1000 ₽",
   },
   {
     title: "Ковры",
     text: "Чистка ковров всех типов: шерсть, шёлк, синтетика, вискоза, хлопок.",
     href: "/uslugi/himchistka-kovrov",
-    price: "от 350 ₽/м²",
   },
   {
     title: "Ковролин",
     text: "Промышленная чистка ковролина в квартирах, офисах, коммерческих помещениях.",
     href: "/uslugi/himchistka-kovrolina",
-    price: "от 220 ₽/м²",
   },
   {
     title: "Салон автомобиля",
     text: "Полная химчистка салона авто: сиденья, потолок, двери, пластик, багажник.",
     href: "/uslugi/himchistka-salona-avtomobilya",
-    price: "от 13000 ₽",
   },
   {
     title: "Ростовые куклы",
     text: "Чистка ростовых кукол и костюмов. Забор и доставка.",
     href: "/uslugi/himchistka-rostovyh-kukol",
-    price: "от 5000 ₽",
   },
 ];
 
@@ -149,7 +143,7 @@ export default function VyezdPage() {
               в&nbsp;течение часа, безопасная химия, гарантия результата.
             </p>
             <p className="mt-3 text-2xl font-bold text-white sm:text-3xl">
-              Цена от&nbsp;1000&nbsp;₽ &middot; Выезд бесплатно
+              Выезд бесплатно &middot; Оплата по&nbsp;факту
             </p>
             <div className="mt-6 flex flex-wrap items-center gap-4">
               <Button
@@ -197,7 +191,7 @@ export default function VyezdPage() {
             </h2>
             <p className="mt-3 text-center text-text-secondary max-w-2xl mx-auto">
               Полный спектр услуг выездной химчистки в&nbsp;Москве. Выберите
-              направление &mdash; узнайте детали и&nbsp;цену.
+              направление &mdash; узнайте детали, стоимость рассчитает менеджер.
             </p>
             <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {DIRECTIONS.map((dir) => (
@@ -211,9 +205,6 @@ export default function VyezdPage() {
                   </h3>
                   <p className="mt-2 text-sm text-text-secondary leading-relaxed">
                     {dir.text}
-                  </p>
-                  <p className="mt-3 text-base font-semibold text-secondary">
-                    {dir.price}
                   </p>
                   <span className="mt-3 inline-flex items-center gap-1 text-sm text-secondary group-hover:text-accent transition-colors">
                     Подробнее <ArrowRight size={14} />

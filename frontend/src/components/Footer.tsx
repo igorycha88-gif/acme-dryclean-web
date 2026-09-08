@@ -20,6 +20,7 @@ const companyLinks = [
   { label: "О компании", href: "/o-kompanii" },
   { label: "Блог", href: "/blog" },
   { label: "Прайс-лист", href: "/price-list.pdf", download: true },
+  { label: "Районы обслуживания", href: "/raiony" },
   { label: "Фото работ", href: "/foto" },
   { label: "Калькулятор", href: "/kalkulyator" },
   { label: "Отзывы", href: "/otzyvy" },

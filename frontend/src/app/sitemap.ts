@@ -1,11 +1,13 @@
 import type { MetadataRoute } from "next";
 import { getAllServiceSlugs } from "@/lib/serviceData";
+import { getAllDistrictSlugs } from "@/lib/districtData";
 import { BLOG_ARTICLES } from "@/lib/blogData";
 
 const BASE_URL = "https://da-dryclean.ru";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const serviceSlugs = getAllServiceSlugs();
+  const districtSlugs = getAllDistrictSlugs();
 
   const staticPages: MetadataRoute.Sitemap = [
     {
@@ -21,7 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.9,
     },
     {
-      url: `${BASE_URL}/ceny`,
+      url: `${BASE_URL}/raiony`,
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.9,
@@ -53,6 +55,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  const districtPages: MetadataRoute.Sitemap = districtSlugs.map((slug) => ({
+    url: `${BASE_URL}/raiony/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: "monthly",
+    priority: 0.7,
+  }));
+
   const blogPages: MetadataRoute.Sitemap = BLOG_ARTICLES.map((article) => ({
     url: `${BASE_URL}/blog/${article.slug}`,
     lastModified: new Date(article.updatedAt),
@@ -60,5 +69,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticPages, ...servicePages, ...blogPages];
+  return [...staticPages, ...servicePages, ...districtPages, ...blogPages];
 }

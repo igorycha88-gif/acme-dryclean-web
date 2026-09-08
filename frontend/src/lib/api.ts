@@ -61,7 +61,7 @@ async function fetchAPIGeneric<T>(baseUrl: string, endpoint: string, options?: R
 
 export interface Service {
   id: string; title: string; slug: string; description: string;
-  image_url: string | null; price: number | null; category: string | null;
+  image_url: string | null; category: string | null;
   is_active: boolean; sort_order: number; created_at: string; updated_at: string;
 }
 export interface ServiceListResponse { items: Service[]; total: number; page: number; per_page: number; }
