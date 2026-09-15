@@ -11,6 +11,8 @@ import {
   ShieldCheck,
   BookOpen,
   ChevronDown,
+  Table2,
+  Link2,
 } from "lucide-react";
 import TopBar from "@/components/TopBar";
 import Navigation from "@/components/Navigation";
@@ -24,6 +26,7 @@ import {
   getServiceBySlug,
   getAllServiceSlugs,
   getOtherServices,
+  SERVICES_DATA,
 } from "@/lib/serviceData";
 import { getRelatedArticles } from "@/lib/blogData";
 import {
@@ -168,6 +171,14 @@ export default async function ServicePage({ params }: Props) {
                     Заказать
                     <ArrowRight size={16} />
                   </Button>
+                  <a
+                    href={`tel:${CONTACTS.phoneRaw}`}
+                    className="inline-flex items-center gap-2 font-[family-name:var(--font-heading)] font-bold text-lg text-white hover:text-white/80 transition-colors"
+                    aria-label={`Позвонить: ${CONTACTS.phone}`}
+                  >
+                    <Phone size={18} className="text-secondary" />
+                    {CONTACTS.phone}
+                  </a>
                 </div>
               </div>
               <div className="aspect-square rounded-2xl overflow-hidden relative">
@@ -196,6 +207,187 @@ export default async function ServicePage({ params }: Props) {
             </div>
           </Container>
         </Section>
+
+        {service.priceTable && (
+          <Section className="bg-bg-alt">
+            <Container>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Table2 size={20} className="text-secondary" />
+                <p className="text-sm font-medium uppercase tracking-wide text-secondary">
+                  Прайс-лист
+                </p>
+              </div>
+              <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] text-center max-md:text-[26px] max-md:leading-8">
+                {service.priceTable.heading}
+              </h2>
+              <div className="mt-10 max-w-3xl mx-auto overflow-x-auto">
+                <table className="w-full border-collapse bg-white rounded-xl overflow-hidden text-sm">
+                  <thead>
+                    <tr className="bg-primary text-white text-left">
+                      {service.priceTable.columns.map((col, i) => (
+                        <th
+                          key={i}
+                          scope="col"
+                          className="px-4 py-3 font-[family-name:var(--font-heading)] font-semibold"
+                        >
+                          {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {service.priceTable.rows.map((row, i) => (
+                      <tr
+                        key={i}
+                        className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      >
+                        {row.map((cell, j) => (
+                          <td
+                            key={j}
+                            className={`px-4 py-3 border-t border-gray-100 ${
+                              j > 0
+                                ? "font-[family-name:var(--font-heading)] font-semibold whitespace-nowrap"
+                                : "text-text-secondary"
+                            }`}
+                          >
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {service.priceTable.note && (
+                  <p className="mt-4 text-xs text-text-secondary/70 leading-relaxed">
+                    {service.priceTable.note}
+                  </p>
+                )}
+              </div>
+            </Container>
+          </Section>
+        )}
+
+        {service.beforeAfter && (
+          <Section>
+            <Container>
+              <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] text-center max-md:text-[26px] max-md:leading-8">
+                До и после чистки
+              </h2>
+              <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                <figure className="rounded-xl overflow-hidden border border-gray-100">
+                  <div className="relative aspect-[4/3]">
+                    <Image
+                      src={service.beforeAfter.beforeSrc}
+                      alt={service.beforeAfter.beforeAlt}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, 384px"
+                    />
+                  </div>
+                  <figcaption className="bg-white px-4 py-3 text-sm text-text-secondary text-center">
+                    {service.beforeAfter.beforeAlt}
+                  </figcaption>
+                </figure>
+                <figure className="rounded-xl overflow-hidden border border-gray-100">
+                  <div className="relative aspect-[4/3]">
+                    <Image
+                      src={service.beforeAfter.afterSrc}
+                      alt={service.beforeAfter.afterAlt}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 640px) 100vw, 384px"
+                    />
+                  </div>
+                  <figcaption className="bg-white px-4 py-3 text-sm text-text-secondary text-center">
+                    {service.beforeAfter.afterAlt}
+                  </figcaption>
+                </figure>
+              </div>
+            </Container>
+          </Section>
+        )}
+
+        {service.comparisonTable && (
+          <Section>
+            <Container>
+              <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] text-center max-md:text-[26px] max-md:leading-8">
+                {service.comparisonTable.heading}
+              </h2>
+              <div className="mt-10 overflow-x-auto">
+                <table className="w-full border-collapse bg-white rounded-xl overflow-hidden text-sm min-w-[640px]">
+                  <thead>
+                    <tr className="bg-primary text-white text-left">
+                      {service.comparisonTable.columns.map((col, i) => (
+                        <th
+                          key={i}
+                          scope="col"
+                          className="px-4 py-3 font-[family-name:var(--font-heading)] font-semibold"
+                        >
+                          {col}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {service.comparisonTable.rows.map((row, i) => (
+                      <tr
+                        key={i}
+                        className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      >
+                        {row.map((cell, j) => (
+                          <td
+                            key={j}
+                            className={`px-4 py-3 border-t border-gray-100 align-top ${
+                              j === 0
+                                ? "font-[family-name:var(--font-heading)] font-semibold"
+                                : "text-text-secondary"
+                            }`}
+                          >
+                            {cell}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {service.comparisonTable.note && (
+                  <p className="mt-4 text-xs text-text-secondary/70 leading-relaxed max-w-3xl">
+                    {service.comparisonTable.note}
+                  </p>
+                )}
+              </div>
+            </Container>
+          </Section>
+        )}
+
+        {service.relatedServiceSlug &&
+          SERVICES_DATA[service.relatedServiceSlug] && (
+            <Section>
+              <Container>
+                <div className="max-w-3xl mx-auto rounded-2xl border border-secondary/30 bg-secondary/5 p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-secondary/15 text-secondary">
+                    <Link2 size={22} />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="font-[family-name:var(--font-heading)] font-bold text-xl">
+                      Смотрите также: {SERVICES_DATA[service.relatedServiceSlug].title}
+                    </h2>
+                    <p className="mt-1 text-sm text-text-secondary">
+                      {SERVICES_DATA[service.relatedServiceSlug].shortDescription}
+                    </p>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    href={`/uslugi/${service.relatedServiceSlug}`}
+                    className="shrink-0"
+                  >
+                    Подробнее
+                    <ArrowRight size={16} />
+                  </Button>
+                </div>
+              </Container>
+            </Section>
+          )}
 
         <Section className="bg-bg-alt">
           <Container>
@@ -369,7 +561,7 @@ export default async function ServicePage({ params }: Props) {
                   href="/#cta-form"
                   className="!border-white !text-white hover:!bg-white hover:!text-primary"
                 >
-                  Оставить заявку
+                  {service.ctaLabel || "Оставить заявку"}
                   <ArrowRight size={16} />
                 </Button>
               </div>

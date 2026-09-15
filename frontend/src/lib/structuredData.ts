@@ -147,6 +147,12 @@ export interface ServiceJsonLd {
     "@type": string;
     name: string;
   };
+  offers?: {
+    "@type": string;
+    priceCurrency: string;
+    lowPrice: number;
+    availability: string;
+  };
 }
 
 export function generateServiceJsonLd(slug: string): ServiceJsonLd | null {
@@ -170,6 +176,16 @@ export function generateServiceJsonLd(slug: string): ServiceJsonLd | null {
       "@type": "State",
       name: "Москва и Московская область",
     },
+    ...(service.priceFromValue
+      ? {
+          offers: {
+            "@type": "Offer",
+            priceCurrency: "RUB",
+            lowPrice: service.priceFromValue,
+            availability: "https://schema.org/InStock",
+          },
+        }
+      : {}),
   };
 }
 
