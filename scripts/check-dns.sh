@@ -100,15 +100,24 @@ if [ "$EXPORTER_RUNNING" -ge 1 ]; then
         bad "у exporter нет extra_hosts для postgres — рестарт сломает подключение к БД. Запустите scripts/setup-metrics-export.sh"
     fi
 else
-    bad "dryclean-postgres-exporter не запущен — метрики БД не собираются"
+    # ADR-010: pg_* метрики рендерит сам content-сервис (/metrics/postgres),
+    # legacy postgres_exporter удаляется setup-metrics-export.sh. Отсутствие
+    # контейнера — норма; работоспособность проверяется в шаге 4/5.
+    ok "legacy postgres_exporter отсутствует (app-level /metrics/postgres — ADR-010)"
 fi
 
-echo "== 4. pg_up локально (127.0.0.1:9187) =="
+echo "== 4. pg_up локально (exporter :9187 или app-level content :8011) =="
 PG_UP=$(curl -s --max-time 10 "http://127.0.0.1:9187/metrics" 2>/dev/null | grep -E '^pg_up ' | awk '{print $2}')
 if [ "$PG_UP" = "1" ]; then
     ok "pg_up = 1 (exporter подключён к БД)"
 else
-    bad "pg_up = '${PG_UP:-нет данных}' — exporter не подключён к PostgreSQL"
+    # ADR-010: основной путь — app-level /metrics/postgres от content-сервиса
+    PG_UP_APP=$(curl -s --max-time 10 "http://127.0.0.1:8011/metrics/postgres" 2>/dev/null | grep -E '^pg_up ' | awk '{print $2}')
+    if [ "$PG_UP_APP" = "1" ]; then
+        ok "pg_up = 1 (app-level /metrics/postgres от content-сервиса)"
+    else
+        bad "pg_up = '${PG_UP:-нет данных}' ни на :9187, ни на :8011 — метрики БД не собираются"
+    fi
 fi
 
 echo "== 5. pg_up через nginx (центральный путь) =="
