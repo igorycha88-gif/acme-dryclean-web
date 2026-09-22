@@ -63,11 +63,12 @@ fi
 echo "── Test 3: полный набор SMTP_* (спецсимволы, пробелы, запятые) ──"
 if [ "$SEMANTICS_OK" -eq 1 ]; then
     OUT=$(run_block "SMTP_HOST=smtp.yandex.ru" "SMTP_PORT=465" "SMTP_SECURE=true" \
+                    "SMTP_TLS_SERVERNAME=smtp.yandex.ru" \
                     "SMTP_USER=test@yandex.ru" "SMTP_PASS=p@ss w0rd\$pecial" \
                     "SMTP_TO=a@yandex.ru,b@mail.ru" "SMTP_FROM=site@yandex.ru")
     RC=$?
     [ $RC -eq 0 ] && ok "блок жив" || fail "блок упал (rc=$RC)"
-    echo "$OUT" | grep -q '^ELEMENTS=14$' && ok "14 элементов (7 пар -e KEY=VAL)" || fail "ожидалось 14: $(echo "$OUT" | head -1)"
+    echo "$OUT" | grep -q '^ELEMENTS=16$' && ok "16 элементов (8 пар -e KEY=VAL)" || fail "ожидалось 16: $(echo "$OUT" | head -1)"
     echo "$OUT" | grep -Fxq 'ARG:SMTP_PASS=p@ss w0rd$pecial' && ok "спецсимволы/пробелы сохранены" || fail "SMTP_PASS искажён"
     echo "$OUT" | grep -q 'SMTP export: enabled' && ok "лог enabled" || fail "нет лога enabled"
     echo "$OUT" | grep '\[log\]' | grep -q 'w0rd' && fail "СЕКРЕТ В ЛОГЕ" || ok "секрет не логируется"

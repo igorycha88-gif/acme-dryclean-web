@@ -40,6 +40,7 @@ describe("POST /api/orders", () => {
     delete process.env.SMTP_PORT;
     delete process.env.SMTP_SECURE;
     delete process.env.SMTP_FROM;
+    delete process.env.SMTP_TLS_SERVERNAME;
   });
 
   afterEach(() => {
@@ -141,6 +142,32 @@ describe("POST /api/orders", () => {
         connectionTimeout: 10_000,
         greetingTimeout: 10_000,
         socketTimeout: 20_000,
+      })
+    );
+  });
+
+  it("BUG-002: SNI-override — при SMTP_HOST=IP-ретранслятору сертификат валидируется по SMTP_TLS_SERVERNAME", async () => {
+    process.env.SMTP_HOST = "172.22.0.1";
+    process.env.SMTP_TLS_SERVERNAME = "smtp.yandex.ru";
+    sendMailMock.mockResolvedValueOnce({ messageId: "test" });
+    const res = await POST(makeRequest(VALID_BODY));
+    expect(res.status).toBe(200);
+    expect(createTransportMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        host: "172.22.0.1",
+        tls: { servername: "smtp.yandex.ru" },
+      })
+    );
+  });
+
+  it("BUG-002: без SMTP_TLS_SERVERNAME servername = host (прямое подключение)", async () => {
+    process.env.SMTP_HOST = "smtp.yandex.ru";
+    sendMailMock.mockResolvedValueOnce({ messageId: "test" });
+    await POST(makeRequest(VALID_BODY));
+    expect(createTransportMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        host: "smtp.yandex.ru",
+        tls: { servername: "smtp.yandex.ru" },
       })
     );
   });

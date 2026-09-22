@@ -263,6 +263,22 @@ cd /opt/app && ./scripts/cleanup.sh --keep 2
 docker system prune -f
 ```
 
+## SMTP relay (отправка заявок с сайта)
+
+Контейнеры на VPS не имеют outbound (ядро без nf_nat, см. раздел выше): SMTP-заявки
+из frontend-контейнера ходят через nginx stream-ретранслятор на шлюзе моста:
+
+```
+frontend-контейнер ──TLS+AUTH──▶ 172.22.0.1:465 (host nginx stream)
+                                     ──TCP passthrough──▶ smtp.yandex.ru:465
+```
+
+- Конфиг: `/etc/nginx/smtp-stream.conf` (копия `nginx/smtp-stream.conf` в repo, инструкция установки внутри)
+- Env на VPS (`/opt/app/.env`): `SMTP_HOST=172.22.0.1`, `SMTP_TLS_SERVERNAME=smtp.yandex.ru`,
+  `SMTP_USER`/`SMTP_PASS` (пароль приложения Яндекса), `SMTP_TO`
+- `SMTP_TLS_SERVERNAME` — SNI/валидация сертификата Яндекса при подключении по IP
+- Проверка: `ss -tlnp | grep 172.22.0.1:465` и POST валидной заявки → `{"ok":true,"channel":"email"}`
+
 ## Metrics export for external monitoring
 
 Central monitoring (project «Мониторинг сайтов») scrapes business and service

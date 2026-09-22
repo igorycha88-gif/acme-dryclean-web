@@ -9,14 +9,17 @@ function isSmtpConfigured(): boolean {
 
 function buildTransport() {
   const port = Number(process.env.SMTP_PORT || 465);
+  const host = process.env.SMTP_HOST || "smtp.yandex.ru";
+  const tlsServername = process.env.SMTP_TLS_SERVERNAME || host;
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || "smtp.yandex.ru",
+    host,
     port,
     secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : port === 465,
     auth: {
       user: process.env.SMTP_USER as string,
       pass: process.env.SMTP_PASS as string,
     },
+    tls: { servername: tlsServername },
     connectionTimeout: 10_000,
     greetingTimeout: 10_000,
     socketTimeout: 20_000,

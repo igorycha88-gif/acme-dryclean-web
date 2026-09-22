@@ -75,3 +75,40 @@ SMTP_TO=igorycha.s@yandex.ru,da-drycleaning@mail.ru
 
 - `scripts/deploy-vps.sh` (правка, TASK-1)
 - `/opt/app/.env` на VPS (env, TASK-2)
+
+## 6. BUG-001 (найден на постдеплойной верификации 2026-09-22)
+
+**Симптом:** POST https://da-dryclean.ru/api/orders → 404 (ожидалось 400/200).
+Прямой запрос в контейнер frontend → 400 (роут и SMTP работают).
+
+**Причина:** nginx (VPS `/etc/nginx/nginx.conf`, не менялся с 29.08) маршрутизирует
+`location /api/` → content-сервис, у которого нет /orders. Location `/api/orders`
+→ frontend отсутствует и на VPS, и в `nginx/prod.conf` репозитория. Заявки с
+Hero/CTA форм (`fetch("/api/orders")`) не доходили до деплоя — предсуществующий баг.
+
+**Фикс (BUGFIX-1):** добавить `location /api/orders` → `$frontend_upstream`
+(зеркало блока `/api/price-list`) в `nginx/prod.conf` (repo) и в
+`/etc/nginx/nginx.conf` (VPS, nginx -t + reload). Пересборка образов не нужна.
+
+**Критерий приёмки:** POST `/api/orders` (невалидный payload) через HTTPS → 400;
+регрессия: сайт 200, `/api/v1/catalog/services` → 200 (content), metrics guard 403.
+
+## 7. BUG-002 (найден при E2E-проверке SMTP, 2026-09-22)
+
+**Симптом:** валидная заявка → `502 email_failed`. Логи: `EAI_AGAIN smtp.yandex.ru`,
+после релея — `Hostname/IP does not match certificate's altnames: IP: 172.22.0.1`.
+
+**Причина:** контейнеры dryclean-net не имеют outbound (ядро VPS без nf_nat):
+ни DNS, ни TCP наружу. SMTP из frontend-контейнера невозможен напрямую.
+
+**Фикс (BUGFIX-2):**
+1. nginx stream-ретранслятор на шлюзе моста: `172.22.0.1:465 → smtp.yandex.ru:465`
+   (TCP-passthrough, TLS+AUTH end-to-end). Конфиг: `nginx/smtp-stream.conf` (repo) →
+   `/etc/nginx/smtp-stream.conf` (VPS) + `load_module ngx_stream_module.so`.
+2. `/opt/app/.env`: `SMTP_HOST=172.22.0.1`, `SMTP_TLS_SERVERNAME=smtp.yandex.ru`.
+3. `route.ts`: `tls: { servername: SMTP_TLS_SERVERNAME || host }` — SNI-валидация
+   сертификата Яндекса при подключении по IP.
+4. `deploy-vps.sh`: проброс `SMTP_TLS_SERVERNAME` в контейнер.
+
+**Критерий приёмки:** POST валидной заявки через HTTPS → `{"ok":true,"channel":"email"}`;
+email доставлен на SMTP_TO (проверяет владелец). Регрессия: без SMTP env — легаси-прокси.
