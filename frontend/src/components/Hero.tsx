@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Star } from "lucide-react";
 import Container from "@/components/ui/Container";
 import Button from "@/components/ui/Button";
-import { SERVICES } from "@/lib/constants";
+import { CONTACTS, SERVICES } from "@/lib/constants";
 import { createOrder } from "@/lib/api";
 import { trackFormSubmit } from "@/lib/tracker";
 
@@ -49,18 +49,18 @@ export default function Hero() {
     <section className="relative bg-primary text-white overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-primary via-primary/95 to-primary/80" />
       <Container className="relative z-10 py-20 max-md:py-12">
-        <div className="max-w-3xl">
-          <h1 className="font-[family-name:var(--font-heading)] font-extrabold text-5xl leading-[56px] max-md:text-[32px] max-md:leading-10">
+        <div className="max-w-3xl max-md:flex max-md:flex-col">
+          <h1 className="font-[family-name:var(--font-heading)] font-extrabold text-5xl leading-[56px] max-md:text-[32px] max-md:leading-10 max-md:order-1">
             Профессиональная выездная химчистка мебели на&nbsp;дому в&nbsp;Москве и&nbsp;МО
           </h1>
-          <p className="mt-4 text-lg text-white/80 max-w-2xl max-md:text-base">
+          <p className="mt-4 text-lg text-white/80 max-w-2xl max-md:text-base max-md:order-2">
             Химчистка диванов, ростовых кукол, ковров, матрасов и салона автомобиля с выездом к вам.
             Без предоплаты. Оплата по факту.
           </p>
 
           <form
             onSubmit={handleSubmit}
-            className="mt-8 flex items-end gap-3 max-md:flex-col"
+            className="mt-8 flex items-end gap-3 max-md:flex-col max-md:order-5 max-md:mt-6"
           >
             <div className="flex-1 w-full">
               <input
@@ -107,17 +107,17 @@ export default function Hero() {
           </form>
 
           {status === "sent" && (
-            <p className="mt-3 text-success text-sm">
+            <p className="mt-3 text-success text-sm max-md:order-6">
               Заявка отправлена! Мы свяжемся с вами в ближайшее время.
             </p>
           )}
           {status === "error" && (
-            <p className="mt-3 text-accent text-sm">
+            <p className="mt-3 text-accent text-sm max-md:order-6">
               Ошибка отправки. Позвоните нам напрямую.
             </p>
           )}
 
-          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/70">
+          <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-white/70 max-md:order-3 max-md:mt-5">
             <span className="flex items-center gap-1">
               {[...Array(5)].map((_, i) => (
                 <Star
@@ -131,6 +131,23 @@ export default function Hero() {
             </span>
             <span>5 000+ заказов</span>
             <span>Оплата по факту</span>
+          </div>
+
+          <div className="hidden max-md:flex max-md:flex-col max-md:gap-2 max-md:order-4 max-md:mt-4">
+            <Button
+              variant="primary"
+              href={`tel:${CONTACTS.phoneRaw}`}
+              className="w-full"
+            >
+              {CONTACTS.phone}
+            </Button>
+            <Button
+              variant="primary"
+              href={`tel:${CONTACTS.phoneAltRaw}`}
+              className="w-full"
+            >
+              {CONTACTS.phoneAlt}
+            </Button>
           </div>
         </div>
       </Container>
