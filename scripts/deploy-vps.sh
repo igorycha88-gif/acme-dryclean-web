@@ -73,6 +73,24 @@ log "── Step 1: Pre-flight checks ──"
 [ -f .env ] || fatal ".env not found in $APP_DIR"
 source .env
 
+# ── Step 1.05: SMTP env для frontend (ЧТЗ_SMTP_переменные_на_проде_PROD-ENV) ──
+# Заявки с сайта отправляются через Яндекс-SMTP (frontend /api/orders), если
+# SMTP_USER/SMTP_PASS заданы в .env; иначе работает старый прокси (fallback).
+# Передаём только установленные переменные: без SMTP в .env поведение прежнее.
+SMTP_FRONTEND_ENV=()
+[ -n "${SMTP_HOST:-}" ]   && SMTP_FRONTEND_ENV+=(-e SMTP_HOST="${SMTP_HOST}")
+[ -n "${SMTP_PORT:-}" ]   && SMTP_FRONTEND_ENV+=(-e SMTP_PORT="${SMTP_PORT}")
+[ -n "${SMTP_SECURE:-}" ] && SMTP_FRONTEND_ENV+=(-e SMTP_SECURE="${SMTP_SECURE}")
+[ -n "${SMTP_USER:-}" ]   && SMTP_FRONTEND_ENV+=(-e SMTP_USER="${SMTP_USER}")
+[ -n "${SMTP_PASS:-}" ]   && SMTP_FRONTEND_ENV+=(-e SMTP_PASS="${SMTP_PASS}")
+[ -n "${SMTP_TO:-}" ]     && SMTP_FRONTEND_ENV+=(-e SMTP_TO="${SMTP_TO}")
+[ -n "${SMTP_FROM:-}" ]   && SMTP_FRONTEND_ENV+=(-e SMTP_FROM="${SMTP_FROM}")
+if [ ${#SMTP_FRONTEND_ENV[@]} -gt 0 ]; then
+    log "  SMTP export: enabled (SMTP_USER set)"
+else
+    log "  SMTP export: disabled (no SMTP_* in .env — orders fall back to proxy)"
+fi
+
 # ── Step 1.1: Docker image cleanup (before disk gate) ────────────────────────
 # Old deploys accumulate ghcr images; end-of-deploy cleanup never runs when
 # disk is already full. Prune early so regular deploys do not stall.
@@ -303,6 +321,7 @@ deploy_direct() {
         --restart unless-stopped \
         -e NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-/api}" \
         -e NEXT_PUBLIC_CONTENT_API_URL="${NEXT_PUBLIC_CONTENT_API_URL:-/api/content}" \
+        "${SMTP_FRONTEND_ENV[@]}" \
         -p 127.0.0.1:${FRONTEND_PORT}:3000 \
         "$FRONTEND_IMAGE"
 
@@ -355,6 +374,7 @@ deploy_blue_green() {
         --restart no \
         -e NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-/api}" \
         -e NEXT_PUBLIC_CONTENT_API_URL="${NEXT_PUBLIC_CONTENT_API_URL:-/api/content}" \
+        "${SMTP_FRONTEND_ENV[@]}" \
         -p 127.0.0.1:${GREEN_FRONTEND_PORT}:3000 \
         "$FRONTEND_IMAGE"
 
@@ -425,6 +445,7 @@ EOF
         --restart unless-stopped \
         -e NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-/api}" \
         -e NEXT_PUBLIC_CONTENT_API_URL="${NEXT_PUBLIC_CONTENT_API_URL:-/api/content}" \
+        "${SMTP_FRONTEND_ENV[@]}" \
         -p 127.0.0.1:${FRONTEND_PORT}:3000 \
         "$FRONTEND_IMAGE"
 
