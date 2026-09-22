@@ -11,6 +11,12 @@ services:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
       - NEXT_PUBLIC_CONTENT_API_URL=http://localhost:8011
       - NEXT_PUBLIC_TRACKING_API_URL=http://localhost:8020
+      - SMTP_HOST=${SMTP_HOST:-smtp.yandex.ru}
+      - SMTP_PORT=${SMTP_PORT:-465}
+      - SMTP_SECURE=${SMTP_SECURE:-true}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_TO=${SMTP_TO:-igorycha.s@yandex.ru,da-drycleaning@mail.ru}
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
