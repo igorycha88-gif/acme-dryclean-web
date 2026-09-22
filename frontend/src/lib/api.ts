@@ -90,8 +90,27 @@ export async function getServices() {
 export async function getReviews() {
   return fetchAPIGeneric<{ items: unknown[] }>(API_BASE_URL, "/api/v1/reviews");
 }
-export async function createOrder(data: { name: string; phone: string; service_type: string }) {
-  return fetchAPIGeneric<{ id: string }>(API_BASE_URL, "/api/v1/orders", { method: "POST", body: JSON.stringify(data) });
+export interface CreateOrderResponse {
+  ok: boolean;
+  channel?: string;
+}
+
+export async function createOrder(data: {
+  name: string;
+  phone: string;
+  service_type: string;
+}): Promise<CreateOrderResponse | null> {
+  try {
+    const res = await fetch("/api/orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as CreateOrderResponse;
+  } catch {
+    return null;
+  }
 }
 
 export const authApi = {

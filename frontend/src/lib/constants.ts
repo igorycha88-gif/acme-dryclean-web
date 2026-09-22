@@ -141,3 +141,7 @@ export const FAQ_ITEMS = [
 
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+// Валиден в обычном, u- и v-режимах (HTML pattern в Chrome 125+ компилируется
+// с флагом v: скобки и дефис внутри символьного класса обязаны быть экранированы)
+export const PHONE_PATTERN = "[+]?[0-9\\s\\-\\(\\)]{7,}";

@@ -7,7 +7,7 @@ export interface OrderPayload {
 }
 
 export const NAME_RE = /^.{1,100}$/;
-export const PHONE_RE = /^[+]?[0-9\s\-()]{7,20}$/;
+export const PHONE_RE = /^[+]?[0-9\s\-\(\)]{7,20}$/;
 const CONTROL_CHARS_RE = /[\r\n\u0000-\u001f]+/g;
 
 export function escapeHtml(value: string): string {

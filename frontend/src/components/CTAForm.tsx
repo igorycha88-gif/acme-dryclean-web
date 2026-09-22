@@ -5,7 +5,7 @@ import { Send, Phone } from "lucide-react";
 import Container from "@/components/ui/Container";
 import Section from "@/components/ui/Section";
 import Button from "@/components/ui/Button";
-import { CONTACTS, SERVICES } from "@/lib/constants";
+import { CONTACTS, SERVICES, PHONE_PATTERN } from "@/lib/constants";
 import { createOrder } from "@/lib/api";
 import { trackFormSubmit } from "@/lib/tracker";
 
@@ -22,23 +22,9 @@ export default function CTAForm() {
         phone: form.phone,
         service_type: form.serviceType,
       });
-      if (result) {
-        trackFormSubmit("cta", form.serviceType || undefined, true);
-        setStatus("sent");
-      } else {
-        const res = await fetch("/api/orders", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: form.name,
-            phone: form.phone,
-            service_type: form.serviceType,
-          }),
-        });
-        if (!res.ok) throw new Error();
-        trackFormSubmit("cta", form.serviceType || undefined, true);
-        setStatus("sent");
-      }
+      if (!result) throw new Error("order failed");
+      trackFormSubmit("cta", form.serviceType || undefined, true);
+      setStatus("sent");
       setForm({ name: "", phone: "", serviceType: "" });
     } catch {
       trackFormSubmit("cta", form.serviceType || undefined, false);
@@ -74,7 +60,7 @@ export default function CTAForm() {
               required
               placeholder="Телефон"
               aria-label="Телефон"
-              pattern="[+]?[0-9\s\-()]{7,}"
+              pattern={PHONE_PATTERN}
               value={form.phone}
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               className="h-12 w-full rounded-[28px] px-6 text-text-primary bg-white placeholder:text-text-secondary outline-none"
