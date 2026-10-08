@@ -24,8 +24,10 @@ import {
   getDistrictBySlug,
   getAllDistrictSlugs,
   getOtherDistricts,
+  getDistrictLocalInfo,
 } from "@/lib/districtData";
 import {
+  generateFAQPageJsonLd,
   generateBreadcrumbJsonLd,
   generateLocalBusinessJsonLd,
 } from "@/lib/structuredData";
@@ -135,7 +137,50 @@ export default async function DistrictPage({ params }: Props) {
   if (!district) notFound();
 
   const otherDistricts = getOtherDistricts(slug);
+  const localInfo = getDistrictLocalInfo(slug);
 
+  const faq = [
+    {
+      question: `Сколько стоит химчистка ${district.namePrepositional}?`,
+      answer:
+        "Стоимость рассчитает менеджер после осмотра или по фото в мессенджере — она зависит от типа мебели, размера и степени загрязнения. Оплата только по факту выполненных работ, без предоплаты. Актуальный прайс-лист можно скачать в подвале сайта.",
+    },
+    {
+      question: `Как быстро приедет мастер ${district.namePrepositional}?`,
+      answer: `Выезд по району ${district.okrug} — в течение 1–2 часов после заявки, ежедневно с 09:00 до 21:00. Мастер приезжает с профессиональным оборудованием Karcher и всеми расходниками, работать на месте не мешает соседям.`,
+    },
+    {
+      question: "Что вы чистите на дому?",
+      answer:
+        "Диваны, кресла, матрасы, ковры и ковролин, мягкую мебель, стулья, автосалоны. Используем гипоаллергенные средства, безопасные для детей и домашних животных.",
+    },
+    {
+      question: "Ковёр почистят на месте или с вывозом?",
+      answer:
+        "Возможны оба варианта. Ковры можно почистить прямо у вас дома (сушка 3–6 часов) или заказать вывоз в цех: курьер сам свернёт и заберёт ковёр, вернём чистым через 1–3 дня. Подробнее — химчистка ковров с вывозом и доставкой.",
+    },
+  ];
+
+  const serviceJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    name: `Химчистка на дому ${district.namePrepositional}`,
+    description: `Профессиональная выездная химчистка диванов, матрасов, ковров и мягкой мебели ${district.namePrepositional} (${district.okrug}, Москва). Выезд мастера в течение 1 часа, безопасная химия, гарантия результата.`,
+    url: `${SITE_URL}/raiony/${slug}`,
+    provider: {
+      "@type": "LocalBusiness",
+      name: "D&A Dry Cleaning",
+      url: SITE_URL,
+      telephone: [CONTACTS.phone, CONTACTS.phoneAlt],
+    },
+    serviceType: "Выездная химчистка на дому",
+    areaServed: {
+      "@type": "AdministrativeArea",
+      name: `${district.name} (${district.okrug}, Москва)`,
+    },
+  };
+
+  const faqJsonLd = generateFAQPageJsonLd(faq);
   const breadcrumbJsonLd = generateBreadcrumbJsonLd([
     { name: "Главная", url: "/" },
     { name: "Районы", url: "/raiony" },
@@ -145,6 +190,16 @@ export default async function DistrictPage({ params }: Props) {
 
   return (
     <>
+      <Script
+        id={`structured-data-service-district-${slug}`}
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceJsonLd) }}
+      />
+      <Script
+        id={`structured-data-faq-district-${slug}`}
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <Script
         id={`structured-data-breadcrumb-district-${slug}`}
         type="application/ld+json"
@@ -239,6 +294,29 @@ export default async function DistrictPage({ params }: Props) {
                   Точную стоимость мастер озвучит после осмотра, оплата — только
                   по&nbsp;факту выполненных работ. Актуальный прайс-лист можно
                   скачать в&nbsp;подвале сайта.
+                </p>
+                {localInfo && (
+                  <p className="mt-4">
+                    Чаще всего выезжаем на {localInfo.streets.slice(0, 3).join(", ")}{" "}
+                    и&nbsp;соседние улицы. {localInfo.feature}.
+                  </p>
+                )}
+                <p className="mt-4 text-sm">
+                  Также забираем ковры с&nbsp;вывозом в&nbsp;цех —{" "}
+                  <Link
+                    href="/uslugi/himchistka-kovrov-s-vyvozom-i-dostavkoy"
+                    className="text-secondary hover:text-accent transition-colors"
+                  >
+                    химчистка ковров с вывозом и доставкой
+                  </Link>
+                  . Работаем и&nbsp;в&nbsp;городах Московской области —{" "}
+                  <Link
+                    href="/geo"
+                    className="text-secondary hover:text-accent transition-colors"
+                  >
+                    список городов обслуживания
+                  </Link>
+                  .
                 </p>
               </div>
             </div>
@@ -338,6 +416,41 @@ export default async function DistrictPage({ params }: Props) {
                     {benefit.description}
                   </p>
                 </div>
+              ))}
+            </div>
+          </Container>
+        </Section>
+
+        <Section>
+          <Container>
+            <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] text-center max-md:text-[26px] max-md:leading-8">
+              Частые вопросы
+            </h2>
+            <div className="mt-10 max-w-3xl mx-auto space-y-4">
+              {faq.map((item, i) => (
+                <details
+                  key={i}
+                  className="group rounded-xl border border-gray-100 bg-white"
+                >
+                  <summary className="flex cursor-pointer items-center justify-between p-5 font-[family-name:var(--font-heading)] font-semibold text-lg max-md:text-base [&::-webkit-details-marker]:hidden list-none">
+                    {item.question}
+                    <svg
+                      className="shrink-0 text-text-secondary transition-transform duration-300 group-open:rotate-180"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden="true"
+                    >
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </summary>
+                  <div className="px-5 pb-5 text-sm text-text-secondary leading-relaxed">
+                    {item.answer}
+                  </div>
+                </details>
               ))}
             </div>
           </Container>

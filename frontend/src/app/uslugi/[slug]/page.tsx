@@ -307,6 +307,24 @@ export default async function ServicePage({ params }: Props) {
           </Section>
         )}
 
+        {service.clientReview && (
+          <Section className="bg-bg-alt">
+            <Container>
+              <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] text-center max-md:text-[26px] max-md:leading-8">
+                Отзыв клиента
+              </h2>
+              <figure className="mt-10 max-w-3xl mx-auto rounded-xl border border-gray-100 bg-white p-6 sm:p-8">
+                <blockquote className="text-text-secondary leading-relaxed">
+                  «{service.clientReview.text}»
+                </blockquote>
+                <figcaption className="mt-4 font-[family-name:var(--font-heading)] font-semibold">
+                  {service.clientReview.author}, {service.clientReview.city}
+                </figcaption>
+              </figure>
+            </Container>
+          </Section>
+        )}
+
         {service.comparisonTable && (
           <Section>
             <Container>
