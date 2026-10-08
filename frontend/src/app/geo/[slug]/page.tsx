@@ -66,29 +66,56 @@ export default async function GeoCityPage({ params }: Props) {
   if (!city) notFound();
 
   const otherCities = getOtherGeoCities(slug);
+  const isHomeMode = city.mode === "home";
 
-  const faq = [
-    {
-      question: `Сколько стоит химчистка ковра с вывозом ${city.namePrepositional}?`,
-      answer: `Чистка — от 350 ₽/м² за синтетику и от 500 ₽/м² за шерсть. Забор и доставка ${city.namePrepositional} рассчитываются менеджером и зависят от размера ковра и точного адреса. Полную стоимость назовём до выезда.`,
-    },
-    {
-      question: `Как быстро приедете за ковром ${city.namePrepositional}?`,
-      answer: `${city.transport}. Обычно забираем ковры в течение 1–2 дней после заявки — менеджер согласует с вами удобный интервал.`,
-    },
-    {
-      question: `Ковёр почистят у меня дома или увезут?`,
-      answer: `Возможны оба варианта: мастер может почистить ковёр на месте (сушка 3–6 часов), либо курьер заберёт ковёр в цех и вернёт чистым через 1–3 дня. Для ${city.namePrepositional} чаще выбирают вывоз — это удобнее.`,
-    },
-    {
-      question: "Какие ковры вы чистите?",
-      answer: "Все типы: синтетика, шерсть, длинный ворс, вискоза, хлопок, шёлк. Деликатные материалы чистим щадящим сухим методом. Убираем пятна, запахи, пылевых клещей.",
-    },
-    {
-      question: `Работаете ли вы в других городах рядом с ${city.name}?`,
-      answer: `Да, мы выезжаем за коврами по всей Москве и Московской области. Посмотрите список городов или позвоните: ${CONTACTS.phone}.`,
-    },
-  ];
+  const faq = isHomeMode
+    ? [
+        {
+          question: `Сколько стоит химчистка дивана ${city.namePrepositional}?`,
+          answer:
+            "Двуспальный диван — от 1 700 ₽, трёхместный — от 2 100 ₽, угловой — от 2 600 ₽. Ковры — от 350 ₽/м² (синтетика) и от 500 ₽/м² (шерсть), матрасы — от 1 300 ₽. Точную стоимость мастер зафиксирует после осмотра, до начала работ.",
+        },
+        {
+          question: `Как быстро приедет мастер ${city.namePrepositional}?`,
+          answer: `${city.transport}. Обычно мастер приезжает в день обращения или на следующий — согласуем время, удобное вам, включая вечера и выходные.`,
+        },
+        {
+          question: "Что нужно подготовить перед чисткой?",
+          answer:
+            "Освободите диван или ковёр от вещей, снимите постельное бельё с матраса. Вода, химия и оборудование — свои у мастера, от вас нужен только доступ к розетке.",
+        },
+        {
+          question: "Сколько сохнет мебель после чистки?",
+          answer:
+            "Диван и кресла — 2–4 часа, матрас — 3–5 часов, ковёр — 3–6 часов. Мощный экстрактор извлекает до 80% влаги сразу, пользоваться мебелью можно в тот же день.",
+        },
+        {
+          question: `Чистите ли вы ковры и матрасы ${city.namePrepositional}?`,
+          answer: `Да, чистим всё на дому: диваны, кресла, ковры и ковролин, матрасы, стулья. Ковёр чистим прямо на полу, матрас — на кровати, ничего снимать и увозить не нужно. Позвоните: ${CONTACTS.phone}.`,
+        },
+      ]
+    : [
+        {
+          question: `Сколько стоит химчистка ковра с вывозом ${city.namePrepositional}?`,
+          answer: `Чистка — от 350 ₽/м² за синтетику и от 500 ₽/м² за шерсть. Забор и доставка ${city.namePrepositional} рассчитываются менеджером и зависят от размера ковра и точного адреса. Полную стоимость назовём до выезда.`,
+        },
+        {
+          question: `Как быстро приедете за ковром ${city.namePrepositional}?`,
+          answer: `${city.transport}. Обычно забираем ковры в течение 1–2 дней после заявки — менеджер согласует с вами удобный интервал.`,
+        },
+        {
+          question: `Ковёр почистят у меня дома или увезут?`,
+          answer: `Возможны оба варианта: мастер может почистить ковёр на месте (сушка 3–6 часов), либо курьер заберёт ковёр в цех и вернёт чистым через 1–3 дня. Для ${city.namePrepositional} чаще выбирают вывоз — это удобнее.`,
+        },
+        {
+          question: "Какие ковры вы чистите?",
+          answer: "Все типы: синтетика, шерсть, длинный ворс, вискоза, хлопок, шёлк. Деликатные материалы чистим щадящим сухим методом. Убираем пятна, запахи, пылевых клещей.",
+        },
+        {
+          question: `Работаете ли вы в других городах рядом с ${city.name}?`,
+          answer: `Да, мы выезжаем за коврами по всей Москве и Московской области. Посмотрите список городов или позвоните: ${CONTACTS.phone}.`,
+        },
+      ];
 
   const serviceJsonLd = {
     "@context": "https://schema.org",
@@ -102,7 +129,9 @@ export default async function GeoCityPage({ params }: Props) {
       url: SITE_URL,
       telephone: [CONTACTS.phone, CONTACTS.phoneAlt],
     },
-    serviceType: "Химчистка ковров с вывозом и доставкой",
+    serviceType: isHomeMode
+      ? "Химчистка на дому: диваны, ковры, матрасы, мягкая мебель"
+      : "Химчистка ковров с вывозом и доставкой",
     areaServed: {
       "@type": "City",
       name: city.name,
@@ -186,7 +215,7 @@ export default async function GeoCityPage({ params }: Props) {
                     href="#cta-geo"
                     className="!border-white !text-white hover:!bg-white hover:!text-primary"
                   >
-                    Заказать вывоз ковра
+                    {isHomeMode ? "Заказать чистку на дому" : "Заказать вывоз ковра"}
                     <ArrowRight size={16} />
                   </Button>
                   <a
@@ -201,8 +230,12 @@ export default async function GeoCityPage({ params }: Props) {
               </div>
               <div className="aspect-square rounded-2xl overflow-hidden relative">
                 <Image
-                  src="/images/services/carpet.jpg"
-                  alt={`${city.h1} — чистка ковров с забором и доставкой`}
+                  src={isHomeMode ? "/images/services/sofa.jpg" : "/images/services/carpet.jpg"}
+                  alt={
+                    isHomeMode
+                      ? `${city.h1} — чистка дивана и мягкой мебели`
+                      : `${city.h1} — чистка ковров с забором и доставкой`
+                  }
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -217,13 +250,17 @@ export default async function GeoCityPage({ params }: Props) {
           <Container>
             <div className="max-w-3xl mx-auto">
               <h2 className="font-[family-name:var(--font-heading)] font-bold text-[26px] leading-8 sm:text-3xl sm:leading-[40px]">
-                Химчистка ковров {city.namePrepositional}: как мы работаем
+                {isHomeMode
+                  ? `Химчистка на дому ${city.namePrepositional}: как мы работаем`
+                  : `Химчистка ковров ${city.namePrepositional}: как мы работаем`}
               </h2>
               <div className="mt-6 text-text-secondary leading-relaxed">
                 <p>
                   {city.name} — {city.region}, {city.distanceFromMkad}.{" "}
-                  {city.transport}. Мы приходим за ковром по указанному вами
-                  адресу, поэтому добираться до нас самостоятельно не нужно.
+                  {city.transport}.{" "}
+                  {isHomeMode
+                    ? "Мастер приезжает по указанному вами адресу со всем оборудованием — возить мебель и ковры никуда не нужно."
+                    : "Мы приходим за ковром по указанному вами адресу, поэтому добираться до нас самостоятельно не нужно."}
                 </p>
                 {city.uniqueText.map((paragraph, i) => (
                   <p key={i} className="mt-4">
@@ -238,14 +275,14 @@ export default async function GeoCityPage({ params }: Props) {
         <Section className="bg-bg-alt">
           <Container>
             <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] text-center max-md:text-[26px] max-md:leading-8">
-              Цены на чистку ковров
+              {isHomeMode ? "Цены на химчистку на дому" : "Цены на чистку ковров"}
             </h2>
             <div className="mt-10 max-w-3xl mx-auto overflow-x-auto">
               <table className="w-full border-collapse bg-white rounded-xl overflow-hidden text-sm">
                 <thead>
                   <tr className="bg-primary text-white text-left">
                     <th scope="col" className="px-4 py-3 font-[family-name:var(--font-heading)] font-semibold">
-                      Материал ковра
+                      {isHomeMode ? "Изделие" : "Материал ковра"}
                     </th>
                     <th scope="col" className="px-4 py-3 font-[family-name:var(--font-heading)] font-semibold">
                       Цена
@@ -253,16 +290,30 @@ export default async function GeoCityPage({ params }: Props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    ["Синтетика", "350 ₽/м²"],
-                    ["Шерстяной ковёр", "500 ₽/м²"],
-                    ["Шерсть, длинный ворс", "600 ₽/м²"],
-                    ["Вискоза", "1 250 ₽/м²"],
-                    ["Хлопок", "2 500 ₽/м²"],
-                    ["Шёлк", "2 500 ₽/м²"],
-                    ["Выведение запахов", "от 1 000 ₽"],
-                    ["Сильные загрязнения", "+30%"],
-                  ].map(([name, price], i) => (
+                  {(isHomeMode
+                    ? [
+                        ["Диван 2-местный (100–140 см)", "1 700 ₽"],
+                        ["Диван 3-местный (150–180 см)", "2 100 ₽"],
+                        ["Угловой диван (180–230 см)", "2 600 ₽"],
+                        ["Кресло", "800 ₽"],
+                        ["Матрас односпальный", "1 300 ₽"],
+                        ["Матрас двуспальный", "2 000 ₽"],
+                        ["Ковёр — синтетика", "350 ₽/м²"],
+                        ["Ковёр — шерсть", "500 ₽/м²"],
+                        ["Выведение запахов", "от 800 ₽"],
+                        ["Сильные загрязнения", "+20–30%"],
+                      ]
+                    : [
+                        ["Синтетика", "350 ₽/м²"],
+                        ["Шерстяной ковёр", "500 ₽/м²"],
+                        ["Шерсть, длинный ворс", "600 ₽/м²"],
+                        ["Вискоза", "1 250 ₽/м²"],
+                        ["Хлопок", "2 500 ₽/м²"],
+                        ["Шёлк", "2 500 ₽/м²"],
+                        ["Выведение запахов", "от 1 000 ₽"],
+                        ["Сильные загрязнения", "+30%"],
+                      ]
+                  ).map(([name, price], i) => (
                     <tr key={i} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                       <td className="px-4 py-3 border-t border-gray-100 text-text-secondary">
                         {name}
@@ -275,8 +326,9 @@ export default async function GeoCityPage({ params }: Props) {
                 </tbody>
               </table>
               <p className="mt-4 text-xs text-text-secondary/70">
-                Стоимость забора и доставки {city.namePrepositional} рассчитает
-                менеджер — зависит от размера ковра и адреса.
+                {isHomeMode
+                  ? `Точную стоимость мастер зафиксирует после осмотра, до начала работ. Выезд ${city.namePrepositional} — бесплатно.`
+                  : `Стоимость забора и доставки ${city.namePrepositional} рассчитает менеджер — зависит от размера ковра и адреса.`}
               </p>
             </div>
           </Container>
@@ -285,25 +337,43 @@ export default async function GeoCityPage({ params }: Props) {
         <Section>
           <Container>
             <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] text-center max-md:text-[26px] max-md:leading-8">
-              Как происходит вывоз ковра
+              {isHomeMode ? "Как проходит чистка на дому" : "Как происходит вывоз ковра"}
             </h2>
             <div className="mt-12 grid grid-cols-3 gap-8 max-md:grid-cols-1 max-md:gap-10">
-              {[
-                {
-                  title: "Заявка",
-                  description:
-                    "Позвоните или оставьте заявку — согласуем размер ковра, адрес и удобный интервал",
-                },
-                {
-                  title: "Забор",
-                  description: `Курьер приезжает ${city.namePrepositional}, сам сворачивает, упаковывает и выносит ковёр`,
-                },
-                {
-                  title: "Чистка и доставка",
-                  description:
-                    "Чистим и сушим ковёр в цеху 1–3 дня, затем привозим обратно и заносим в квартиру",
-                },
-              ].map((step, i) => (
+              {(isHomeMode
+                ? [
+                    {
+                      title: "Заявка",
+                      description:
+                        "Позвоните или оставьте заявку — согласуем, что чистим, и удобное время выезда мастера",
+                    },
+                    {
+                      title: "Выезд и чистка",
+                      description: `Мастер приезжает ${city.namePrepositional} со своим оборудованием Karcher: осмотр, подбор средства под ткань, чистка 1–1,5 часа`,
+                    },
+                    {
+                      title: "Сушка и приёмка",
+                      description:
+                        "Мебель сохнет 2–4 часа. Вы принимаете результат — и только потом оплачиваете работу",
+                    },
+                  ]
+                : [
+                    {
+                      title: "Заявка",
+                      description:
+                        "Позвоните или оставьте заявку — согласуем размер ковра, адрес и удобный интервал",
+                    },
+                    {
+                      title: "Забор",
+                      description: `Курьер приезжает ${city.namePrepositional}, сам сворачивает, упаковывает и выносит ковёр`,
+                    },
+                    {
+                      title: "Чистка и доставка",
+                      description:
+                        "Чистим и сушим ковёр в цеху 1–3 дня, затем привозим обратно и заносим в квартиру",
+                    },
+                  ]
+              ).map((step, i) => (
                 <div key={i} className="relative text-center">
                   <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-secondary/10 text-secondary">
                     {i === 0 ? <CheckCircle size={28} /> : i === 1 ? <Truck size={28} /> : <Clock size={28} />}
@@ -321,14 +391,29 @@ export default async function GeoCityPage({ params }: Props) {
               ))}
             </div>
             <p className="mt-8 text-center text-sm text-text-secondary">
-              Подробнее об услуге, сроках и сравнении служб —{" "}
-              <Link
-                href="/uslugi/himchistka-kovrov-s-vyvozom-i-dostavkoy"
-                className="text-secondary hover:text-accent transition-colors"
-              >
-                химчистка ковров с вывозом и доставкой
-              </Link>
-              .
+              {isHomeMode ? (
+                <>
+                  Подробнее об услугах и ценах —{" "}
+                  <Link
+                    href="/uslugi"
+                    className="text-secondary hover:text-accent transition-colors"
+                  >
+                    все услуги химчистки
+                  </Link>
+                  .
+                </>
+              ) : (
+                <>
+                  Подробнее об услуге, сроках и сравнении служб —{" "}
+                  <Link
+                    href="/uslugi/himchistka-kovrov-s-vyvozom-i-dostavkoy"
+                    className="text-secondary hover:text-accent transition-colors"
+                  >
+                    химчистка ковров с вывозом и доставкой
+                  </Link>
+                  .
+                </>
+              )}
             </p>
           </Container>
         </Section>
@@ -372,11 +457,14 @@ export default async function GeoCityPage({ params }: Props) {
           <Container className="py-16 max-md:py-10">
             <div className="max-w-2xl mx-auto text-center">
               <h2 className="font-[family-name:var(--font-heading)] font-bold text-4xl leading-[44px] max-md:text-[26px] max-md:leading-8">
-                Закажите вывоз ковра {city.namePrepositional}
+                {isHomeMode
+                  ? `Закажите химчистку на дому ${city.namePrepositional}`
+                  : `Закажите вывоз ковра ${city.namePrepositional}`}
               </h2>
               <p className="mt-3 text-white/70">
-                Перезвоним в течение 15 минут, рассчитаем стоимость и
-                согласуем удобное время забора. Без предоплаты.
+                {isHomeMode
+                  ? "Перезвоним в течение 15 минут, рассчитаем стоимость и согласуем время выезда мастера. Без предоплаты."
+                  : "Перезвоним в течение 15 минут, рассчитаем стоимость и согласуем удобное время забора. Без предоплаты."}
               </p>
               <div className="mt-8 flex justify-center gap-4 max-md:flex-col max-md:items-center">
                 <Button variant="primary" href={`tel:${CONTACTS.phoneRaw}`}>
